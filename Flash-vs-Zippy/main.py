@@ -53,7 +53,7 @@ magic_fx = pygame.mixer.Sound(os.path.join(base_path, "assets/audio/magic.wav"))
 magic_fx.set_volume(0.75)
 
 # Load background image
-bg_image = pygame.image.load(os.path.join(base_path, "assets/images/background/background.jpg")).convert_alpha()
+bg_image = pygame.image.load(os.path.join(base_path, "assets/images/background/background.png")).convert_alpha()
 
 # Load spritesheets
 warrior_sheet = pygame.image.load(os.path.join(base_path, "assets/images/warrior/Sprites/warrior.png")).convert_alpha()
