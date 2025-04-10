@@ -77,6 +77,7 @@ WIZARD_ANIMATION_STEPS = [8, 8, 1, 8, 8, 3, 7]
 count_font = pygame.font.Font(os.path.join(base_path, "assets/fonts/turok.ttf"), 80)
 score_font = pygame.font.Font(os.path.join(base_path, "assets/fonts/turok.ttf"), 30)
 menu_font = pygame.font.Font(os.path.join(base_path, "assets/fonts/turok.ttf"), 40)
+title_font = pygame.font.Font(os.path.join(base_path, "assets/fonts/turok.ttf"), 60)
 
 # Network variables
 client_socket = None
@@ -288,7 +289,7 @@ def main_menu():
         draw_bg()
         
         # Draw menu options
-        draw_text("BRAWLER - NETWORK EDITION", menu_font, WHITE, 180, 100)
+        draw_text("Flash vs Zippy", title_font, YELLOW, 300, 130)
         
         # Host/Join options
         if host_option:
