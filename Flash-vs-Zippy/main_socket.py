@@ -120,11 +120,13 @@ def connect_to_server():
         client_socket.settimeout(5)  # Set timeout for connection
         
         # Connect to the server
+        print(f"Attempting to connect to {server_addr}:{server_port}")
         client_socket.connect((server_addr, server_port))
         connection_status = "Connected, waiting for registration..."
         
         # Wait for registration message from server
         message = receive_message()
+        print(f"Received registration message: {message}")
         
         if message and message.get("type") == "registration":
             player_id = message.get("player_id")
@@ -193,10 +195,16 @@ def receive_message():
         # Receive the header (message length)
         header = client_socket.recv(HEADER_SIZE)
         if not header:
+            print("No header received")
             return None
         
-        # Parse the message length
-        message_length = int(header.decode('utf-8').strip())
+        try:
+            # Parse the message length
+            message_length = int(header.decode('utf-8').strip())
+            print(f"Receiving message of length {message_length}")
+        except ValueError:
+            print(f"Invalid header received: {header}")
+            return None
         
         # Receive the actual message
         full_message = b""
@@ -205,14 +213,21 @@ def receive_message():
         while bytes_received < message_length:
             chunk = client_socket.recv(min(BUFFER_SIZE, message_length - bytes_received))
             if not chunk:
+                print("Connection closed while receiving message")
                 return None
             
             full_message += chunk
             bytes_received += len(chunk)
         
         # Parse the message as JSON
-        message = json.loads(full_message.decode('utf-8'))
-        return message
+        try:
+            message = json.loads(full_message.decode('utf-8'))
+            print(f"Received message: {message}")
+            return message
+        except json.JSONDecodeError as e:
+            print(f"Invalid JSON received: {full_message}")
+            print(f"JSON error: {e}")
+            return None
         
     except Exception as e:
         print(f"Error receiving message: {str(e)}")
@@ -224,26 +239,33 @@ def network_thread_function():
     
     while not stop_network_thread:
         try:
+            if not client_socket:
+                print("Socket disconnected")
+                connection_status = "Disconnected from server"
+                break
+                
             # Receive message from server
             message = receive_message()
             
             if not message:
-                # Connection closed
-                connection_status = "Disconnected from server"
-                break
+                # No message received or connection closed
+                time.sleep(0.1)  # Small delay to prevent CPU spinning
+                continue
             
             # Process message based on type
             msg_type = message.get("type", "")
             
             if msg_type == "game_start":
+                print("Game start message received")
                 game_started = True
                 
             elif msg_type == "opponent_input":
                 # Update opponent's input
+                input_data = message.get("input", {})
                 if player_id == "1":
-                    fighter_2.set_remote_input(message.get("input", {}))
+                    fighter_2.set_remote_input(input_data)
                 else:
-                    fighter_1.set_remote_input(message.get("input", {}))
+                    fighter_1.set_remote_input(input_data)
                     
             elif msg_type == "game_state":
                 # Update game state from server
@@ -260,20 +282,23 @@ def network_thread_function():
             
             elif msg_type == "error":
                 connection_status = f"Server error: {message.get('message', 'Unknown error')}"
+                print(f"Received error from server: {connection_status}")
             
         except Exception as e:
             print(f"Network thread error: {str(e)}")
             connection_status = f"Connection error: {str(e)}"
-            break
+            time.sleep(0.5)  # Small delay before potentially retrying
     
     # Clean up if thread is stopping
     if client_socket:
         try:
             client_socket.close()
+            client_socket = None
         except:
             pass
         finally:
-            client_socket = None
+            print("Network thread stopped, socket closed")
+
 
 # Main menu screen
 def main_menu():
@@ -345,7 +370,7 @@ def main_menu():
                     if host_option:
                         # Launch the server in a separate process
                         import subprocess
-                        subprocess.Popen([sys.executable, os.path.join(base_path,"socket_server.py")])
+                        subprocess.Popen([sys.executable, os.path.join(base_path, "socket_server.py")])
                         # Give the server a moment to start
                         pygame.time.delay(1000)
                         # Set server address to localhost

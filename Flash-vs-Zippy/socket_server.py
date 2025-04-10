@@ -102,6 +102,7 @@ class GameServer:
         self.player_sockets[player_id] = client_socket
         
         # Notify the player of their ID
+        logger.info(f"Registering Player {player_id}")
         self.send_message(client_socket, {
             "type": "registration", 
             "player_id": player_id
@@ -127,12 +128,14 @@ class GameServer:
                 try:
                     message = self.receive_message(client_socket)
                     if not message:
+                        logger.info(f"No message received from Player {player_id}, breaking connection")
                         break
                     
                     # Process the message
                     self.process_message(client_socket, player_id, message)
                 
                 except ConnectionError:
+                    logger.info(f"Connection error with Player {player_id}")
                     break
                 except Exception as e:
                     logger.error(f"Error handling client {player_id}: {e}")
@@ -170,6 +173,7 @@ class GameServer:
         try:
             # Handle different message types
             msg_type = data.get("type", "")
+            logger.info(f"Received {msg_type} message from Player {player_id}")
             
             if msg_type == "input":
                 # Store the input state for this player
@@ -235,6 +239,7 @@ class GameServer:
             
             # Send the message
             client_socket.sendall(full_message.encode('utf-8'))
+            logger.debug(f"Sent message: {message}")
             
         except Exception as e:
             logger.error(f"Error sending message: {e}")
@@ -246,10 +251,16 @@ class GameServer:
             # Receive the header (message length)
             header = client_socket.recv(HEADER_SIZE)
             if not header:
+                logger.info("No header received, client likely disconnected")
                 return None
             
-            # Parse the message length
-            message_length = int(header.decode('utf-8').strip())
+            try:
+                # Parse the message length
+                message_length = int(header.decode('utf-8').strip())
+                logger.debug(f"Receiving message of length {message_length}")
+            except ValueError:
+                logger.error(f"Invalid header received: {header}")
+                return None
             
             # Receive the actual message
             full_message = b""
@@ -258,14 +269,20 @@ class GameServer:
             while bytes_received < message_length:
                 chunk = client_socket.recv(min(BUFFER_SIZE, message_length - bytes_received))
                 if not chunk:
+                    logger.info("Connection closed while receiving message")
                     return None
                 
                 full_message += chunk
                 bytes_received += len(chunk)
             
             # Parse the message as JSON
-            message = json.loads(full_message.decode('utf-8'))
-            return message
+            try:
+                message = json.loads(full_message.decode('utf-8'))
+                logger.debug(f"Received message: {message}")
+                return message
+            except json.JSONDecodeError:
+                logger.error(f"Invalid JSON received: {full_message}")
+                return None
             
         except ConnectionError:
             raise
