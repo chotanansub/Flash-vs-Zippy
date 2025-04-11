@@ -159,6 +159,7 @@ def send_message(message_type, data):
     global client_socket
     
     if not client_socket:
+        print(f"Cannot send {message_type} message: socket not connected")
         return False
     
     try:
@@ -180,8 +181,17 @@ def send_message(message_type, data):
         client_socket.sendall(full_message.encode('utf-8'))
         return True
         
+    except ConnectionResetError:
+        print(f"Connection reset while sending {message_type} message")
+        return False
+    except ConnectionAbortedError:
+        print(f"Connection aborted while sending {message_type} message")
+        return False
+    except BrokenPipeError:
+        print(f"Broken pipe while sending {message_type} message")
+        return False
     except Exception as e:
-        print(f"Error sending message: {str(e)}")
+        print(f"Error sending {message_type} message: {str(e)}")
         return False
 
 # Function to receive a message from the server
@@ -449,14 +459,23 @@ while waiting_for_connection and connected:
         # Check for input
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
+                stop_network_thread = True
+                if network_thread and network_thread.is_alive():
+                    network_thread.join(1)  # Wait for thread to end with timeout
                 pygame.quit()
                 sys.exit()
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
                     # Return to menu
                     stop_network_thread = True
-                    if network_thread.is_alive():
+                    if network_thread and network_thread.is_alive():
                         network_thread.join(1)  # Wait for thread to end with timeout
+                    if client_socket:
+                        try:
+                            client_socket.close()
+                            client_socket = None
+                        except:
+                            pass
                     is_host = main_menu()
                     connected = connect_to_server()
                     if connected:
@@ -473,6 +492,8 @@ while waiting_for_connection and connected:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             stop_network_thread = True
+            if network_thread and network_thread.is_alive():
+                network_thread.join(1)  # Wait for thread to end with timeout
             pygame.quit()
             sys.exit()
     
@@ -514,21 +535,36 @@ while run:
             fighter_1.move(SCREEN_WIDTH, SCREEN_HEIGHT, screen, fighter_2, round_over)
             fighter_2.move(SCREEN_WIDTH, SCREEN_HEIGHT, screen, fighter_1, round_over)
             
-            # Send local input to server
-            if player_id == "1":
-                input_data = fighter_1.get_input()
-                send_message("input", {"input": input_data})
-                
-                # Send local fighter state to server
+            # Send local input and state to server (limit frequency for better performance)
+            current_time = pygame.time.get_ticks()
+            if current_time % 3 == 0:  # Only send every 3rd frame
+                if player_id == "1":
+                    input_data = fighter_1.get_input()
+                    send_message("input", {"input": input_data})
+                    
+                    # Send local fighter state to server
+                    state_data = fighter_1.get_state()
+                    send_message("state_update", {"state": state_data})
+                else:
+                    input_data = fighter_2.get_input()
+                    send_message("input", {"input": input_data})
+                    
+                    # Send local fighter state to server
+                    state_data = fighter_2.get_state()
+                    send_message("state_update", {"state": state_data})
+            
+            # But always send health updates immediately when health changes
+            # This ensures hit registration is properly synchronized
+            if player_id == "1" and fighter_1.health < 100 and fighter_1.hit_cooldown == 45:
+                # Health just changed, send update immediately
                 state_data = fighter_1.get_state()
                 send_message("state_update", {"state": state_data})
-            else:
-                input_data = fighter_2.get_input()
-                send_message("input", {"input": input_data})
-                
-                # Send local fighter state to server
+                print(f"Sending health update: {fighter_1.health}")
+            elif player_id == "2" and fighter_2.health < 100 and fighter_2.hit_cooldown == 45:
+                # Health just changed, send update immediately
                 state_data = fighter_2.get_state()
                 send_message("state_update", {"state": state_data})
+                print(f"Sending health update: {fighter_2.health}")
         else:
             # Display count timer
             draw_text(str(intro_count), count_font, RED, SCREEN_WIDTH / 2, SCREEN_HEIGHT / 3)
@@ -554,6 +590,7 @@ while run:
                 
                 # Send round over notification to server
                 send_message("round_over", {})
+                print(f"Player 2 wins round - fighter_1 defeated")
             elif not fighter_2.alive:
                 score[0] += 1
                 round_over = True
@@ -561,19 +598,32 @@ while run:
                 
                 # Send round over notification to server
                 send_message("round_over", {})
+                print(f"Player 1 wins round - fighter_2 defeated")
         else:
             # Display victory image
             screen.blit(victory_img, (360, 150))
+            
+            # Winner text
+            if fighter_1.alive and not fighter_2.alive:
+                draw_text("Player 1 Wins!", score_font, WHITE, 400, 300)
+            elif fighter_2.alive and not fighter_1.alive:
+                draw_text("Player 2 Wins!", score_font, WHITE, 400, 300)
+                
             if pygame.time.get_ticks() - round_over_time > ROUND_OVER_COOLDOWN:
+                # Reset for new round
                 round_over = False
                 intro_count = 3
                 
-                # Create new fighters
-                fighter_1 = Fighter(1, 200, 310, False, WARRIOR_DATA, warrior_sheet, WARRIOR_ANIMATION_STEPS, sword_fx, player_id == "1")
-                fighter_2 = Fighter(2, 700, 310, True, WIZARD_DATA, wizard_sheet, WIZARD_ANIMATION_STEPS, magic_fx, player_id == "2")
+                # Create new fighters but maintain the same is_local setting
+                is_fighter1_local = fighter_1.is_local
+                is_fighter2_local = fighter_2.is_local
+                
+                fighter_1 = Fighter(1, 200, 310, False, WARRIOR_DATA, warrior_sheet, WARRIOR_ANIMATION_STEPS, sword_fx, is_fighter1_local)
+                fighter_2 = Fighter(2, 700, 310, True, WIZARD_DATA, wizard_sheet, WIZARD_ANIMATION_STEPS, magic_fx, is_fighter2_local)
                 
                 # Send round reset notification to server
                 send_message("round_reset", {})
+                print("Round reset - new fighters created")
 
     # Event handler
     for event in pygame.event.get():

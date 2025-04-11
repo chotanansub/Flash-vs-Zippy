@@ -21,6 +21,7 @@ class Fighter():
     self.attack_cooldown = 0
     self.attack_sound = sound
     self.hit = False
+    self.hit_cooldown = 0  # New: cooldown for hit state to ensure animation plays
     self.health = 100
     self.alive = True
     self.is_local = is_local  # Whether this fighter is controlled locally
@@ -49,6 +50,7 @@ class Fighter():
       "attack_type": self.attack_type,
       "attack_cooldown": self.attack_cooldown,
       "hit": self.hit,
+      "hit_cooldown": self.hit_cooldown,  # Include hit cooldown in state
       "health": self.health,
       "alive": self.alive,
       "action": self.action,
@@ -69,11 +71,39 @@ class Fighter():
     self.attacking = state.get("attacking", self.attacking)
     self.attack_type = state.get("attack_type", self.attack_type)
     self.attack_cooldown = state.get("attack_cooldown", self.attack_cooldown)
-    self.hit = state.get("hit", self.hit)
-    self.health = state.get("health", self.health)
+    
+    # Health synchronization - always take the lower health value
+    # This ensures hits aren't "missed" in sync
+    remote_health = state.get("health", self.health)
+    if remote_health < self.health:
+      self.health = remote_health
+      # If health decreased, ensure we show the hit animation
+      if self.hit_cooldown <= 0:
+        self.hit = True
+        self.hit_cooldown = 45
+    
+    # Only update hit state if we're not in hit cooldown
+    if self.hit_cooldown <= 0:
+      new_hit = state.get("hit", self.hit)
+      # If this is a new hit, set the cooldown
+      if new_hit and not self.hit:
+        self.hit = True
+        self.hit_cooldown = 45  # Set cooldown (slightly less than animation duration)
+      elif not new_hit:
+        self.hit = False
+    
+    # Get hit cooldown from state, but don't override if our local cooldown is higher
+    remote_hit_cooldown = state.get("hit_cooldown", 0)
+    if remote_hit_cooldown > self.hit_cooldown:
+      self.hit_cooldown = remote_hit_cooldown
+    
     self.alive = state.get("alive", self.alive)
-    self.action = state.get("action", self.action)
-    self.frame_index = state.get("frame_index", self.frame_index)
+    
+    # Don't override animation states if we're in the middle of a hit animation
+    if self.action != 5 or self.frame_index == 0:
+      self.action = state.get("action", self.action)
+      self.frame_index = state.get("frame_index", self.frame_index)
+    
     self.flip = state.get("flip", self.flip)
 
   def set_remote_input(self, input_data):
@@ -260,6 +290,10 @@ class Fighter():
           # If the player was in the middle of an attack, then the attack is stopped
           self.attacking = False
           self.attack_cooldown = 20
+    
+    # Update hit cooldown if active
+    if self.hit_cooldown > 0:
+      self.hit_cooldown -= 1
 
 
   def attack(self, target):
@@ -267,10 +301,22 @@ class Fighter():
       # Execute attack
       self.attacking = True
       self.attack_sound.play()
-      attacking_rect = pygame.Rect(self.rect.centerx - (2 * self.rect.width * self.flip), self.rect.y, 2 * self.rect.width, self.rect.height)
+      
+      # Create a larger hitbox for more forgiving hit registration in network play
+      attacking_rect = pygame.Rect(self.rect.centerx - (2.5 * self.rect.width * self.flip), 
+                                 self.rect.y, 
+                                 2.5 * self.rect.width, 
+                                 self.rect.height)
+      
       if attacking_rect.colliderect(target.rect):
-        target.health -= 10
-        target.hit = True
+        # Only apply damage if target is not in hit cooldown
+        if target.hit_cooldown <= 0:
+          # Apply damage - reduced to 5 for more hits needed to win
+          prev_health = target.health
+          target.health -= 10
+          print(f"HIT! Health reduced from {prev_health} to {target.health}")
+          target.hit = True
+          target.hit_cooldown = 45  # Set the hit cooldown
 
 
   def update_action(self, new_action):

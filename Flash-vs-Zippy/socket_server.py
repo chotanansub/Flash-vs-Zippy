@@ -173,7 +173,6 @@ class GameServer:
         try:
             # Handle different message types
             msg_type = data.get("type", "")
-            logger.info(f"Received {msg_type} message from Player {player_id}")
             
             if msg_type == "input":
                 # Store the input state for this player
@@ -182,25 +181,56 @@ class GameServer:
                 # Forward input to the other player
                 other_player = "2" if player_id == "1" else "1"
                 if other_player in self.player_sockets:
-                    self.send_message(self.player_sockets[other_player], {
-                        "type": "opponent_input",
-                        "input": data.get("input", {})
-                    })
+                    try:
+                        self.send_message(self.player_sockets[other_player], {
+                            "type": "opponent_input",
+                            "input": data.get("input", {})
+                        })
+                    except:
+                        logger.error(f"Failed to forward input to Player {other_player}")
             
             elif msg_type == "state_update":
                 # Player is sending their current state
-                self.player_states[player_id] = data.get("state", {})
+                state = data.get("state", {})
+                prev_state = self.player_states.get(player_id, {})
                 
-                # Broadcast the complete state if we have both players' states
-                if self.player_states["1"] and self.player_states["2"]:
+                # Check if health has changed, prioritize health synchronization
+                if "health" in state and "health" in prev_state:
+                    if state["health"] < prev_state["health"]:
+                        logger.info(f"Health change detected for Player {player_id}: {prev_state['health']} -> {state['health']}")
+                        
+                # Store the updated state
+                self.player_states[player_id] = state
+                
+                # Forward state to the other player immediately on health change
+                other_player = "2" if player_id == "1" else "1"
+                if "health" in state and "health" in prev_state and state["health"] < prev_state["health"]:
+                    if other_player in self.player_sockets:
+                        try:
+                            # Send immediate health update to opponent
+                            self.send_message(self.player_sockets[other_player], {
+                                "type": "game_state",
+                                "player_states": self.player_states,
+                                "round_over": self.round_over
+                            })
+                            logger.info(f"Sent immediate health update to Player {other_player}")
+                        except:
+                            logger.error(f"Failed to send immediate health update to Player {other_player}")
+                
+                # Broadcast complete state periodically
+                if self.player_states.get("1") and self.player_states.get("2"):
                     self.broadcast_game_state()
             
             elif msg_type == "round_over":
+                logger.info(f"Round over received from Player {player_id}")
                 self.round_over = True
                 self.broadcast_game_state()
             
             elif msg_type == "round_reset":
+                logger.info(f"Round reset received from Player {player_id}")
                 self.round_over = False
+                # Reset player states but keep connections active
+                self.player_states = {"1": {}, "2": {}}
                 self.broadcast_game_state()
                 
         except Exception as e:
@@ -214,8 +244,12 @@ class GameServer:
             "round_over": self.round_over
         }
         
-        for player_id, socket in self.player_sockets.items():
-            self.send_message(socket, message)
+        for player_id, socket in list(self.player_sockets.items()):
+            try:
+                self.send_message(socket, message)
+            except Exception as e:
+                logger.error(f"Failed to send game state to Player {player_id}: {e}")
+                # Don't remove the player here, let the handle_client thread do it
 
     def notify_game_start(self):
         """Notify all players that the game has started"""
