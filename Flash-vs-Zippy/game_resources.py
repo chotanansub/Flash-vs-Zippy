@@ -42,7 +42,7 @@ class GameResources:
     
     def initialize_audio(self):
         """Initialize game audio"""
-        pygame.mixer.music.load(os.path.join(self.base_path, "assets/audio/music.mp3"))
+        pygame.mixer.music.load(os.path.join(self.base_path, "assets/audio/bgm.mp3"))
         pygame.mixer.music.set_volume(0.5)
         pygame.mixer.music.play(-1, 0.0, 5000)
         
