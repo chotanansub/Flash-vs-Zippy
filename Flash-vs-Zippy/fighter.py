@@ -163,14 +163,14 @@ class Fighter():
               self.vel_y = -30
               self.jump = True
             # Attack
-            if key[pygame.K_r] or key[pygame.K_t]:
-              self.attack(target)
-              # Determine attack type
+            if not self.attacking:
               if key[pygame.K_r]:
-                self.attack_type = 1
-              if key[pygame.K_t]:
-                self.attack_type = 2
-          
+                  self.attack_type = 1
+                  self.attack(target)
+              elif key[pygame.K_t]:
+                  self.attack_type = 2
+                  self.attack(target)
+                    
           elif self.player == 2:
             # Movement
             if key[pygame.K_LEFT]:
@@ -185,12 +185,15 @@ class Fighter():
               self.jump = True
             # Attack
             if key[pygame.K_k] or key[pygame.K_l]:
-              self.attack(target)
+              
               # Determine attack type
-              if key[pygame.K_k]:
-                self.attack_type = 1
-              if key[pygame.K_l]:
-                self.attack_type = 2
+              if not self.attacking:
+                if key[pygame.K_k]:
+                    self.attack_type = 1
+                    self.attack(target)
+                elif key[pygame.K_l]:
+                    self.attack_type = 2
+                    self.attack(target)
       
       else:
         # Process remote input from network
