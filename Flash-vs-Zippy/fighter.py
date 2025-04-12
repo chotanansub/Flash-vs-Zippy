@@ -277,8 +277,20 @@ class Fighter():
       self.update_action(0)  # 0:idle
 
     animation_cooldown = 50
+    
+    # Get the correct animation image
+    current_image = self.animation_list[self.action][self.frame_index]
+    
+    # Scale up attack2 animation by 2x
+    if self.action == 4:  # If it's attack2
+      # Create a larger image for attack2 animation
+      scaled_width = current_image.get_width() * 2
+      scaled_height = current_image.get_height() * 2
+      current_image = pygame.transform.scale(current_image, (scaled_width, scaled_height))
+    
     # Update image
-    self.image = self.animation_list[self.action][self.frame_index]
+    self.image = current_image
+    
     # Check if enough time has passed since the last update
     if pygame.time.get_ticks() - self.update_time > animation_cooldown:
       self.frame_index += 1
@@ -312,11 +324,19 @@ class Fighter():
       self.attacking = True
       self.attack_sound.play()
       
-      # Create a larger hitbox for more forgiving hit registration in network play
-      attacking_rect = pygame.Rect(self.rect.centerx - (2.5 * self.rect.width * self.flip), 
-                                 self.rect.y, 
-                                 2.5 * self.rect.width, 
-                                 self.rect.height)
+      # Create a hitbox based on attack type - attack2 has double size
+      if self.attack_type == 2:
+        # Larger hitbox for attack type 2 (twice as large)
+        attacking_rect = pygame.Rect(self.rect.centerx - (5.0 * self.rect.width * self.flip), 
+                                   self.rect.y, 
+                                   5.0 * self.rect.width, 
+                                   self.rect.height)
+      else:
+        # Regular hitbox for attack type 1
+        attacking_rect = pygame.Rect(self.rect.centerx - (2.5 * self.rect.width * self.flip), 
+                                   self.rect.y, 
+                                   2.5 * self.rect.width, 
+                                   self.rect.height)
       
       if attacking_rect.colliderect(target.rect):
         # Only apply damage if target is not in hit cooldown
@@ -339,4 +359,24 @@ class Fighter():
 
   def draw(self, surface):
     img = pygame.transform.flip(self.image, self.flip, False)
-    surface.blit(img, (self.rect.x - (self.offset[0] * self.image_scale), self.rect.y - (self.offset[1] * self.image_scale)))
+    
+    # Adjust offset for attack2 (bigger animation)
+    if self.action == 4:  # If it's attack2
+      # For attack2, we need to adjust the position since the image is larger
+      offset_x = self.offset[0] * self.image_scale
+      offset_y = self.offset[1] * self.image_scale
+      
+      # Move the animation up more by increasing the Y offset
+      extra_height_offset = img.get_height() * 0.1  # Lift the animation higher
+      
+      # If attacking with attack2, adjust position for the larger animation
+      if self.flip:  # Facing left
+        surface.blit(img, (self.rect.x - offset_x - img.get_width()/4, 
+                          self.rect.y - offset_y - img.get_height()/4 - extra_height_offset))
+      else:  # Facing right
+        surface.blit(img, (self.rect.x - offset_x - img.get_width()/4, 
+                          self.rect.y - offset_y - img.get_height()/4 - extra_height_offset))
+    else:
+      # Normal drawing for other animations
+      surface.blit(img, (self.rect.x - (self.offset[0] * self.image_scale), 
+                         self.rect.y - (self.offset[1] * self.image_scale)))
