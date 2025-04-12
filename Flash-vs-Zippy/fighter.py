@@ -1,7 +1,7 @@
 import pygame
 
 class Fighter():
-  def __init__(self, player, x, y, flip, data, sprite_sheet, animation_steps, sound, is_local=True):
+  def __init__(self, player, x, y, flip, data, sprite_sheet, animation_steps, sounds, is_local=True):
     self.player = player
     self.size = data[0]
     self.image_scale = data[1]
@@ -19,7 +19,7 @@ class Fighter():
     self.attacking = False
     self.attack_type = 0
     self.attack_cooldown = 0
-    self.attack_sound = sound
+    self.attack_sounds = sounds  # Now a list/tuple of sounds for different attacks
     self.hit = False
     self.hit_cooldown = 0  # New: cooldown for hit state to ensure animation plays
     self.health = 100
@@ -322,7 +322,12 @@ class Fighter():
     if self.attack_cooldown == 0:
       # Execute attack
       self.attacking = True
-      self.attack_sound.play()
+      
+      # Play the appropriate sound based on attack type
+      if self.attack_type == 1:
+        self.attack_sounds[0].play()  # Attack1 sound
+      elif self.attack_type == 2:
+        self.attack_sounds[1].play()  # Attack2 sound
       
       # Create a hitbox based on attack type - attack2 has double size
       if self.attack_type == 2:

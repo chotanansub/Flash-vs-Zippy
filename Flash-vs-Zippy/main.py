@@ -24,13 +24,13 @@ score = [0, 0]  # player scores: [P1, P2]
 round_over = False
 
 # Load game assets
-zippy_fx, flash_fx = game_res.initialize_audio()
+zippy_attack1_fx, zippy_attack2_fx, flash_attack1_fx, flash_attack2_fx = game_res.initialize_audio()
 bg_image, zippy_sheet, flash_sheet, victory_img = game_res.load_images()
 count_font, score_font, _, _ = game_res.load_fonts()
 
 # Create two instances of fighters
-fighter_1 = Fighter(1, 200, 310, False, game_res.ZIPPY_DATA, zippy_sheet, game_res.ZIPPY_ANIMATION_STEPS, zippy_fx)
-fighter_2 = Fighter(2, 700, 310, False, game_res.FLASH_DATA, flash_sheet, game_res.FLASH_ANIMATION_STEPS, flash_fx)
+fighter_1 = Fighter(1, 200, 310, False, game_res.ZIPPY_DATA, zippy_sheet, game_res.ZIPPY_ANIMATION_STEPS, (zippy_attack1_fx, zippy_attack2_fx))
+fighter_2 = Fighter(2, 700, 310, False, game_res.FLASH_DATA, flash_sheet, game_res.FLASH_ANIMATION_STEPS, (flash_attack1_fx, flash_attack2_fx))
 
 # Game loop
 run = True
@@ -90,9 +90,8 @@ while run:
         if pygame.time.get_ticks() - round_over_time > game_res.ROUND_OVER_COOLDOWN:
             round_over = False
             intro_count = 3
-            fighter_1 = Fighter(1, 200, 310, False, game_res.WARRIOR_DATA, warrior_sheet, game_res.WARRIOR_ANIMATION_STEPS, sword_fx)
-            fighter_2 = Fighter(2, 700, 310, True, game_res.WIZARD_DATA, wizard_sheet, game_res.WIZARD_ANIMATION_STEPS, magic_fx)
-
+            fighter_1 = Fighter(1, 200, 310, False, game_res.ZIPPY_DATA, zippy_sheet, game_res.ZIPPY_ANIMATION_STEPS, (zippy_attack1_fx, zippy_attack2_fx))
+            fighter_2 = Fighter(2, 700, 310, False, game_res.FLASH_DATA, flash_sheet, game_res.FLASH_ANIMATION_STEPS, (flash_attack1_fx, flash_attack2_fx))
     # Event handler
     for event in pygame.event.get():
         if event.type == pygame.QUIT:

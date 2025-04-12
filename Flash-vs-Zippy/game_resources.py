@@ -46,14 +46,21 @@ class GameResources:
         pygame.mixer.music.set_volume(0.5)
         pygame.mixer.music.play(-1, 0.0, 5000)
         
-        # Load sound effects
-        zippy_fx = pygame.mixer.Sound(os.path.join(self.base_path, "assets/audio/sword.wav"))
-        zippy_fx.set_volume(0.5)
+        # Load sound effects for Zippy
+        zippy_attack1_fx = pygame.mixer.Sound(os.path.join(self.base_path, "assets/audio/sword.wav"))
+        zippy_attack1_fx.set_volume(0.5)
         
-        flash_fx = pygame.mixer.Sound(os.path.join(self.base_path, "assets/audio/tornado.wav"))
-        flash_fx.set_volume(0.75)
+        zippy_attack2_fx = pygame.mixer.Sound(os.path.join(self.base_path, "assets/audio/sword.wav"))
+        zippy_attack2_fx.set_volume(0.6)
         
-        return zippy_fx, flash_fx
+        # Load sound effects for Flash
+        flash_attack1_fx = pygame.mixer.Sound(os.path.join(self.base_path, "assets/audio/magic.wav"))
+        flash_attack1_fx.set_volume(0.7)
+        
+        flash_attack2_fx = pygame.mixer.Sound(os.path.join(self.base_path, "assets/audio/tornado.wav"))
+        flash_attack2_fx.set_volume(0.8)
+        
+        return zippy_attack1_fx, zippy_attack2_fx, flash_attack1_fx, flash_attack2_fx
     
     def load_images(self):
         """Load and return game images"""
