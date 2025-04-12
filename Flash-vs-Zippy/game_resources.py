@@ -83,6 +83,7 @@ class GameResources:
         menu_font = pygame.font.Font(os.path.join(self.base_path, "assets/fonts/turok.ttf"), 40)
         title_font = pygame.font.Font(os.path.join(self.base_path, "assets/fonts/turok.ttf"), 60)
         
+        
         return count_font, score_font, menu_font, title_font
     
     def draw_text(self, screen, text, font, text_col, x, y):

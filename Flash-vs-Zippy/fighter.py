@@ -1,7 +1,7 @@
 import pygame
 
 class Fighter():
-  def __init__(self, player, x, y, flip, data, sprite_sheet, animation_steps, sounds, is_local=True):
+  def __init__(self, player, x, y, flip, data, sprite_sheet, animation_steps, sounds, is_local=True, font=None):
     self.player = player
     self.size = data[0]
     self.image_scale = data[1]
@@ -26,6 +26,7 @@ class Fighter():
     self.alive = True
     self.is_local = is_local  # Whether this fighter is controlled locally
     self.remote_input = {}  # Store remote input for network play
+    self.font = font  # Store the font for drawing text
 
   def load_images(self, sprite_sheet, animation_steps):
     # extract images from spritesheet
@@ -405,3 +406,21 @@ class Fighter():
       # Normal drawing for other animations
       surface.blit(img, (self.rect.x - (self.offset[0] * self.image_scale), 
                          self.rect.y - (self.offset[1] * self.image_scale)))
+                         
+  def draw_floating_text(self, surface, game_res):
+    """Draw floating player name text above the fighter"""
+    player_text = f"Player {self.player}"
+    
+    # Calculate position above the fighter
+    text_x = self.rect.centerx +25  # Center the text above the fighter
+    text_y = self.rect.y - 40       # Position it above the fighter
+    
+    # Use the font passed during initialization, or get it if not available
+    font = self.font
+    if font is None:
+        # For backwards compatibility, load the font from game_res
+        _, font, _, _ = game_res.load_fonts()
+    
+    # Draw white text with a black outline for better visibility
+    game_res.draw_text(surface, player_text, font, game_res.BLACK, text_x + 2, text_y + 2)  # Shadow
+    game_res.draw_text(surface, player_text, font, game_res.WHITE, text_x, text_y)  # Main text

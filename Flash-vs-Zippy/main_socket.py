@@ -362,8 +362,10 @@ is_host = main_menu()
 # Create fighters
 # The local player controls fighter_1 if they are player_id 1
 # and fighter_2 if they are player_id 2
-fighter_1 = Fighter(1, 200, 310, True, game_res.ZIPPY_DATA, zippy_sheet, game_res.ZIPPY_ANIMATION_STEPS, (zippy_attack1_fx, zippy_attack2_fx), True)
-fighter_2 = Fighter(2, 700, 310, False, game_res.FLASH_DATA, flash_sheet, game_res.FLASH_ANIMATION_STEPS, (flash_attack1_fx, flash_attack2_fx), False)
+fighter_1 = Fighter(1, 200, 310, True, game_res.ZIPPY_DATA, zippy_sheet, game_res.ZIPPY_ANIMATION_STEPS, 
+                   (zippy_attack1_fx, zippy_attack2_fx), True, score_font)
+fighter_2 = Fighter(2, 700, 310, False, game_res.FLASH_DATA, flash_sheet, game_res.FLASH_ANIMATION_STEPS, 
+                   (flash_attack1_fx, flash_attack2_fx), False, score_font)
 
 # Connect to server and start network thread
 connected = connect_to_server()
@@ -461,8 +463,12 @@ while run:
         # Show player stats
         game_res.draw_health_bar(screen, fighter_1.health, 20, 20)
         game_res.draw_health_bar(screen, fighter_2.health, 580, 20)
-        game_res.draw_text(screen, "P1: " + str(score[0]), score_font, game_res.RED, 20, 60)
-        game_res.draw_text(screen, "P2: " + str(score[1]), score_font, game_res.RED, 580, 60)
+
+        game_res.draw_text(screen, "P1: " + str(score[0]), score_font, game_res.BLACK, 22, 62)
+        game_res.draw_text(screen, "P2: " + str(score[1]), score_font, game_res.BLACK, 582, 62)
+
+        game_res.draw_text(screen, "P1: " + str(score[0]), score_font, game_res.WHITE, 20, 60)
+        game_res.draw_text(screen, "P2: " + str(score[1]), score_font, game_res.WHITE, 580, 60)
         
         # Show which player you are
         if player_id:
@@ -519,6 +525,10 @@ while run:
         # Draw fighters
         fighter_1.draw(screen)
         fighter_2.draw(screen)
+        
+        # Draw floating player name text above fighters
+        fighter_1.draw_floating_text(screen, game_res)
+        fighter_2.draw_floating_text(screen, game_res)
 
         # Check for player defeat
         if not round_over:
@@ -557,8 +567,10 @@ while run:
                 is_fighter1_local = fighter_1.is_local
                 is_fighter2_local = fighter_2.is_local
                 
-                fighter_1 = Fighter(1, 200, 310, True, game_res.ZIPPY_DATA, zippy_sheet, game_res.ZIPPY_ANIMATION_STEPS, (zippy_attack1_fx, zippy_attack2_fx), is_fighter1_local)
-                fighter_2 = Fighter(2, 700, 310, False, game_res.FLASH_DATA, flash_sheet, game_res.FLASH_ANIMATION_STEPS, (flash_attack1_fx, flash_attack2_fx), is_fighter2_local)
+                fighter_1 = Fighter(1, 200, 310, True, game_res.ZIPPY_DATA, zippy_sheet, game_res.ZIPPY_ANIMATION_STEPS, 
+                                  (zippy_attack1_fx, zippy_attack2_fx), is_fighter1_local, score_font)
+                fighter_2 = Fighter(2, 700, 310, False, game_res.FLASH_DATA, flash_sheet, game_res.FLASH_ANIMATION_STEPS, 
+                                  (flash_attack1_fx, flash_attack2_fx), is_fighter2_local, score_font)
                 
                 # Send round reset notification to server
                 send_message("round_reset", {})

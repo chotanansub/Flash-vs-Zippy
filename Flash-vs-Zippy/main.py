@@ -26,11 +26,13 @@ round_over = False
 # Load game assets
 zippy_attack1_fx, zippy_attack2_fx, flash_attack1_fx, flash_attack2_fx = game_res.initialize_audio()
 bg_image, zippy_sheet, flash_sheet, victory_img = game_res.load_images()
-count_font, score_font, _, _ = game_res.load_fonts()
+count_font, score_font, menu_font, title_font = game_res.load_fonts()
 
 # Create two instances of fighters
-fighter_1 = Fighter(1, 200, 310, True, game_res.ZIPPY_DATA, zippy_sheet, game_res.ZIPPY_ANIMATION_STEPS, (zippy_attack1_fx, zippy_attack2_fx))
-fighter_2 = Fighter(2, 700, 310, False, game_res.FLASH_DATA, flash_sheet, game_res.FLASH_ANIMATION_STEPS, (flash_attack1_fx, flash_attack2_fx))
+fighter_1 = Fighter(1, 200, 310, True, game_res.ZIPPY_DATA, zippy_sheet, game_res.ZIPPY_ANIMATION_STEPS, 
+                   (zippy_attack1_fx, zippy_attack2_fx), True, score_font)
+fighter_2 = Fighter(2, 700, 310, False, game_res.FLASH_DATA, flash_sheet, game_res.FLASH_ANIMATION_STEPS, 
+                   (flash_attack1_fx, flash_attack2_fx), True, score_font)
 
 # Game loop
 run = True
@@ -43,8 +45,12 @@ while run:
     # Show player stats
     game_res.draw_health_bar(screen, fighter_1.health, 20, 20)
     game_res.draw_health_bar(screen, fighter_2.health, 580, 20)
-    game_res.draw_text(screen, "P1: " + str(score[0]), score_font, game_res.RED, 20, 60)
-    game_res.draw_text(screen, "P2: " + str(score[1]), score_font, game_res.RED, 580, 60)
+    
+    game_res.draw_text(screen, "P1: " + str(score[0]), score_font, game_res.BLACK, 22, 62)
+    game_res.draw_text(screen, "P2: " + str(score[1]), score_font, game_res.BLACK, 582, 62)
+    
+    game_res.draw_text(screen, "P1: " + str(score[0]), score_font, game_res.WHITE, 20, 60)
+    game_res.draw_text(screen, "P2: " + str(score[1]), score_font, game_res.WHITE, 580, 60)
 
     # Update countdown
     if intro_count <= 0:
@@ -66,6 +72,10 @@ while run:
     # Draw fighters
     fighter_1.draw(screen)
     fighter_2.draw(screen)
+    
+    # Draw floating player name text above fighters
+    fighter_1.draw_floating_text(screen, game_res)
+    fighter_2.draw_floating_text(screen, game_res)
 
     # Check for player defeat
     if not round_over:
@@ -90,8 +100,10 @@ while run:
         if pygame.time.get_ticks() - round_over_time > game_res.ROUND_OVER_COOLDOWN:
             round_over = False
             intro_count = 3
-            fighter_1 = Fighter(1, 200, 310, True, game_res.ZIPPY_DATA, zippy_sheet, game_res.ZIPPY_ANIMATION_STEPS, (zippy_attack1_fx, zippy_attack2_fx))
-            fighter_2 = Fighter(2, 700, 310, False, game_res.FLASH_DATA, flash_sheet, game_res.FLASH_ANIMATION_STEPS, (flash_attack1_fx, flash_attack2_fx))
+            fighter_1 = Fighter(1, 200, 310, True, game_res.ZIPPY_DATA, zippy_sheet, game_res.ZIPPY_ANIMATION_STEPS, 
+                              (zippy_attack1_fx, zippy_attack2_fx), True, score_font)
+            fighter_2 = Fighter(2, 700, 310, False, game_res.FLASH_DATA, flash_sheet, game_res.FLASH_ANIMATION_STEPS, 
+                              (flash_attack1_fx, flash_attack2_fx), True, score_font)
     # Event handler
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
