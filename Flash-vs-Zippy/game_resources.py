@@ -50,7 +50,7 @@ class GameResources:
         sword_fx = pygame.mixer.Sound(os.path.join(self.base_path, "assets/audio/sword.wav"))
         sword_fx.set_volume(0.5)
         
-        magic_fx = pygame.mixer.Sound(os.path.join(self.base_path, "assets/audio/magic.wav"))
+        magic_fx = pygame.mixer.Sound(os.path.join(self.base_path, "assets/audio/tornado.wav"))
         magic_fx.set_volume(0.75)
         
         return sword_fx, magic_fx
