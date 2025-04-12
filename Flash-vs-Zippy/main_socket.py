@@ -29,8 +29,8 @@ score = [0, 0]  # player scores: [P1, P2]
 round_over = False
 
 # Load game assets
-sword_fx, magic_fx = game_res.initialize_audio()
-bg_image, warrior_sheet, wizard_sheet, victory_img = game_res.load_images()
+zippy_fx, flash_fx = game_res.initialize_audio()
+bg_image, zippy_sheet, flash_sheet, victory_img = game_res.load_images()
 count_font, score_font, menu_font, title_font = game_res.load_fonts()
 
 # Network variables
@@ -362,8 +362,8 @@ is_host = main_menu()
 # Create fighters
 # The local player controls fighter_1 if they are player_id 1
 # and fighter_2 if they are player_id 2
-fighter_1 = Fighter(1, 200, 310, False, game_res.WARRIOR_DATA, warrior_sheet, game_res.WARRIOR_ANIMATION_STEPS, sword_fx, True)
-fighter_2 = Fighter(2, 700, 310, True, game_res.WIZARD_DATA, wizard_sheet, game_res.WIZARD_ANIMATION_STEPS, magic_fx, False)
+fighter_1 = Fighter(1, 200, 310, False, game_res.ZIPPY_DATA, zippy_sheet, game_res.ZIPPY_ANIMATION_STEPS, zippy_fx, True)
+fighter_2 = Fighter(2, 700, 310, False, game_res.FLASH_DATA, flash_sheet, game_res.FLASH_ANIMATION_STEPS, flash_fx, False)
 
 # Connect to server and start network thread
 connected = connect_to_server()
@@ -557,8 +557,8 @@ while run:
                 is_fighter1_local = fighter_1.is_local
                 is_fighter2_local = fighter_2.is_local
                 
-                fighter_1 = Fighter(1, 200, 310, False, game_res.WARRIOR_DATA, warrior_sheet, game_res.WARRIOR_ANIMATION_STEPS, sword_fx, is_fighter1_local)
-                fighter_2 = Fighter(2, 700, 310, True, game_res.WIZARD_DATA, wizard_sheet, game_res.WIZARD_ANIMATION_STEPS, magic_fx, is_fighter2_local)
+                fighter_1 = Fighter(1, 200, 310, False, game_res.ZIPPY_DATA, zippy_sheet, game_res.ZIPPY_ANIMATION_STEPS, zippy_fx, is_fighter1_local)
+                fighter_2 = Fighter(2, 700, 310, False, game_res.FLASH_DATA, flash_sheet, game_res.FLASH_ANIMATION_STEPS, flash_fx, is_fighter2_local)
                 
                 # Send round reset notification to server
                 send_message("round_reset", {})

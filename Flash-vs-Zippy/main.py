@@ -24,13 +24,13 @@ score = [0, 0]  # player scores: [P1, P2]
 round_over = False
 
 # Load game assets
-sword_fx, magic_fx = game_res.initialize_audio()
-bg_image, warrior_sheet, wizard_sheet, victory_img = game_res.load_images()
+zippy_fx, flash_fx = game_res.initialize_audio()
+bg_image, zippy_sheet, flash_sheet, victory_img = game_res.load_images()
 count_font, score_font, _, _ = game_res.load_fonts()
 
 # Create two instances of fighters
-fighter_1 = Fighter(1, 200, 310, False, game_res.WARRIOR_DATA, warrior_sheet, game_res.WARRIOR_ANIMATION_STEPS, sword_fx)
-fighter_2 = Fighter(2, 700, 310, False, game_res.WIZARD_DATA, wizard_sheet, game_res.WIZARD_ANIMATION_STEPS, magic_fx)
+fighter_1 = Fighter(1, 200, 310, False, game_res.ZIPPY_DATA, zippy_sheet, game_res.ZIPPY_ANIMATION_STEPS, zippy_fx)
+fighter_2 = Fighter(2, 700, 310, False, game_res.FLASH_DATA, flash_sheet, game_res.FLASH_ANIMATION_STEPS, flash_fx)
 
 # Game loop
 run = True

@@ -23,19 +23,19 @@ class GameResources:
         self.FPS = 60
         self.ROUND_OVER_COOLDOWN = 2000
         
-        # Fighter variables - Warrior
-        self.WARRIOR_SIZE = 162
-        self.WARRIOR_SCALE = 4
-        self.WARRIOR_OFFSET = [72, 56]
-        self.WARRIOR_DATA = [self.WARRIOR_SIZE, self.WARRIOR_SCALE, self.WARRIOR_OFFSET]
-        self.WARRIOR_ANIMATION_STEPS = [10, 8, 1, 7, 7, 3, 7]
+        # Fighter variables - Zippy (previously Warrior)
+        self.ZIPPY_SIZE = 162
+        self.ZIPPY_SCALE = 4
+        self.ZIPPY_OFFSET = [72, 56]
+        self.ZIPPY_DATA = [self.ZIPPY_SIZE, self.ZIPPY_SCALE, self.ZIPPY_OFFSET]
+        self.ZIPPY_ANIMATION_STEPS = [10, 8, 1, 7, 7, 3, 7]
         
-        # Fighter variables - Wizard (Flash)
-        self.WIZARD_SIZE = 128
-        self.WIZARD_SCALE = 2
-        self.WIZARD_OFFSET = [0, 0]
-        self.WIZARD_DATA = [self.WIZARD_SIZE, self.WIZARD_SCALE, self.WIZARD_OFFSET]
-        self.WIZARD_ANIMATION_STEPS = [6, 6, 1, 6, 3, 6, 6]
+        # Fighter variables - Flash (previously Wizard)
+        self.FLASH_SIZE = 128
+        self.FLASH_SCALE = 2
+        self.FLASH_OFFSET = [0, 0]
+        self.FLASH_DATA = [self.FLASH_SIZE, self.FLASH_SCALE, self.FLASH_OFFSET]
+        self.FLASH_ANIMATION_STEPS = [6, 6, 1, 6, 3, 6, 6]
         
         # Initialize audio
         mixer.init()
@@ -47,13 +47,13 @@ class GameResources:
         pygame.mixer.music.play(-1, 0.0, 5000)
         
         # Load sound effects
-        sword_fx = pygame.mixer.Sound(os.path.join(self.base_path, "assets/audio/sword.wav"))
-        sword_fx.set_volume(0.5)
+        zippy_fx = pygame.mixer.Sound(os.path.join(self.base_path, "assets/audio/sword.wav"))
+        zippy_fx.set_volume(0.5)
         
-        magic_fx = pygame.mixer.Sound(os.path.join(self.base_path, "assets/audio/tornado.wav"))
-        magic_fx.set_volume(0.75)
+        flash_fx = pygame.mixer.Sound(os.path.join(self.base_path, "assets/audio/tornado.wav"))
+        flash_fx.set_volume(0.75)
         
-        return sword_fx, magic_fx
+        return zippy_fx, flash_fx
     
     def load_images(self):
         """Load and return game images"""
@@ -61,13 +61,13 @@ class GameResources:
         bg_image = pygame.image.load(os.path.join(self.base_path, "assets/images/background/background.png")).convert_alpha()
         
         # Spritesheets
-        warrior_sheet = pygame.image.load(os.path.join(self.base_path, "assets/images/warrior/Sprites/warrior.png")).convert_alpha()
-        wizard_sheet = pygame.image.load(os.path.join(self.base_path, "assets/images/flash/flash.png")).convert_alpha()
+        zippy_sheet = pygame.image.load(os.path.join(self.base_path, "assets/images/warrior/Sprites/warrior.png")).convert_alpha()
+        flash_sheet = pygame.image.load(os.path.join(self.base_path, "assets/images/flash/flash.png")).convert_alpha()
         
         # Victory image
         victory_img = pygame.image.load(os.path.join(self.base_path, "assets/images/icons/victory.png")).convert_alpha()
         
-        return bg_image, warrior_sheet, wizard_sheet, victory_img
+        return bg_image, zippy_sheet, flash_sheet, victory_img
     
     def load_fonts(self):
         """Load and return game fonts"""
