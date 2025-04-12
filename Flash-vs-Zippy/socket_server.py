@@ -4,10 +4,15 @@ import json
 import logging
 import time
 import select
+import os
+from game_resources import GameResources
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
+
+# Load game resources for constants
+game_res = GameResources()
 
 # Server configuration
 HOST = '0.0.0.0'  # Listen on all available interfaces

@@ -6,78 +6,32 @@ import json
 import socket
 import threading
 import time
-from fighter import Fighter  # Make sure this imports the socket-compatible version
-
-# Get the base directory of the current script
-base_path = os.path.dirname(os.path.abspath(__file__))
+from fighter import Fighter
+from game_resources import GameResources
 
 # Initialize pygame
-mixer.init()
 pygame.init()
 
+# Initialize game resources
+game_res = GameResources()
+
 # Create game window
-SCREEN_WIDTH = 1000
-SCREEN_HEIGHT = 600
-screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-pygame.display.set_caption("Brawler - Network Edition")
+screen = pygame.display.set_mode((game_res.SCREEN_WIDTH, game_res.SCREEN_HEIGHT))
+pygame.display.set_caption("Flash vs Zippy - Network Edition")
 
 # Set framerate
 clock = pygame.time.Clock()
-FPS = 60
-
-# Define colours
-RED = (255, 0, 0)
-YELLOW = (255, 255, 0)
-WHITE = (255, 255, 255)
-BLACK = (0, 0, 0)
 
 # Define game variables
 intro_count = 3
 last_count_update = pygame.time.get_ticks()
 score = [0, 0]  # player scores: [P1, P2]
 round_over = False
-ROUND_OVER_COOLDOWN = 2000
 
-# Define fighter variables
-WARRIOR_SIZE = 162
-WARRIOR_SCALE = 4
-WARRIOR_OFFSET = [72, 56]
-WARRIOR_DATA = [WARRIOR_SIZE, WARRIOR_SCALE, WARRIOR_OFFSET]
-WIZARD_SIZE = 250
-WIZARD_SCALE = 3
-WIZARD_OFFSET = [112, 107]
-WIZARD_DATA = [WIZARD_SIZE, WIZARD_SCALE, WIZARD_OFFSET]
-
-# Load music and sounds
-pygame.mixer.music.load(os.path.join(base_path, "assets/audio/music.mp3"))
-pygame.mixer.music.set_volume(0.5)
-pygame.mixer.music.play(-1, 0.0, 5000)
-
-sword_fx = pygame.mixer.Sound(os.path.join(base_path, "assets/audio/sword.wav"))
-sword_fx.set_volume(0.5)
-
-magic_fx = pygame.mixer.Sound(os.path.join(base_path, "assets/audio/magic.wav"))
-magic_fx.set_volume(0.75)
-
-# Load background image
-bg_image = pygame.image.load(os.path.join(base_path, "assets/images/background/background.png")).convert_alpha()
-
-# Load spritesheets
-warrior_sheet = pygame.image.load(os.path.join(base_path, "assets/images/warrior/Sprites/warrior.png")).convert_alpha()
-wizard_sheet = pygame.image.load(os.path.join(base_path, "assets/images/wizard/Sprites/wizard.png")).convert_alpha()
-
-# Load victory image
-victory_img = pygame.image.load(os.path.join(base_path, "assets/images/icons/victory.png")).convert_alpha()
-
-# Define number of steps in each animation
-WARRIOR_ANIMATION_STEPS = [10, 8, 1, 7, 7, 3, 7]
-WIZARD_ANIMATION_STEPS = [8, 8, 1, 8, 8, 3, 7]
-
-# Define font
-count_font = pygame.font.Font(os.path.join(base_path, "assets/fonts/turok.ttf"), 80)
-score_font = pygame.font.Font(os.path.join(base_path, "assets/fonts/turok.ttf"), 30)
-menu_font = pygame.font.Font(os.path.join(base_path, "assets/fonts/turok.ttf"), 40)
-title_font = pygame.font.Font(os.path.join(base_path, "assets/fonts/turok.ttf"), 60)
+# Load game assets
+sword_fx, magic_fx = game_res.initialize_audio()
+bg_image, warrior_sheet, wizard_sheet, victory_img = game_res.load_images()
+count_font, score_font, menu_font, title_font = game_res.load_fonts()
 
 # Network variables
 client_socket = None
@@ -92,23 +46,6 @@ HEADER_SIZE = 10  # Size of message length header
 
 # Flag to indicate if we need to stop network thread
 stop_network_thread = False
-
-# Function for drawing text
-def draw_text(text, font, text_col, x, y):
-    img = font.render(text, True, text_col)
-    screen.blit(img, (x, y))
-
-# Function for drawing background
-def draw_bg():
-    scaled_bg = pygame.transform.scale(bg_image, (SCREEN_WIDTH, SCREEN_HEIGHT))
-    screen.blit(scaled_bg, (0, 0))
-
-# Function for drawing fighter health bars
-def draw_health_bar(health, x, y):
-    ratio = health / 100
-    pygame.draw.rect(screen, WHITE, (x - 2, y - 2, 404, 34))
-    pygame.draw.rect(screen, RED, (x, y, 400, 30))
-    pygame.draw.rect(screen, YELLOW, (x, y, 400 * ratio, 30))
 
 # Function to connect to the server
 def connect_to_server():
@@ -309,8 +246,7 @@ def network_thread_function():
         finally:
             print("Network thread stopped, socket closed")
 
-
-# Main menu screen
+# Main menu screen for host/join options
 def main_menu():
     global server_addr, server_port
     
@@ -321,35 +257,36 @@ def main_menu():
     
     while menu_running:
         # Draw background
-        draw_bg()
+        game_res.draw_bg(screen, bg_image)
         
         # Draw menu options
-        draw_text("Flash vs Zippy", title_font, YELLOW, 300, 130)
+        game_res.draw_text(screen, "Flash vs Zippy", title_font, game_res.YELLOW, 300, 130)
         
         # Host/Join options
-        if host_option:
-            pygame.draw.rect(screen, YELLOW, (300, 200, 400, 50), 2)
-        draw_text("HOST GAME (SERVER)", menu_font, WHITE, 310, 210)
+        pygame.draw.rect(screen, game_res.WHITE if host_option else game_res.BLACK, (300, 220, 400, 50), 0)
+        pygame.draw.rect(screen, game_res.YELLOW if host_option else game_res.BLACK, (300, 220, 400, 50), 2)
+        game_res.draw_text(screen, "HOST GAME (SERVER)", menu_font, game_res.BLACK if host_option else game_res.WHITE, 310, 230)
         
-        if not host_option:
-            pygame.draw.rect(screen, YELLOW, (300, 280, 400, 50), 2)
-        draw_text("JOIN GAME (CLIENT)", menu_font, WHITE, 310, 290)
+        pygame.draw.rect(screen, game_res.WHITE if not host_option else game_res.BLACK, (300, 300, 400, 50), 0)
+        pygame.draw.rect(screen, game_res.YELLOW if not host_option else game_res.BLACK, (300, 300, 400, 50), 2)
+        game_res.draw_text(screen, "JOIN GAME (CLIENT)", menu_font, game_res.BLACK if not host_option else game_res.WHITE, 310, 310)
         
         # Server address input
         if not host_option:
-            pygame.draw.rect(screen, WHITE, (250, 350, 500, 40))
+            pygame.draw.rect(screen, game_res.WHITE, (250, 370, 500, 40))
             
             if input_active:
-                pygame.draw.rect(screen, YELLOW, (250, 350, 500, 40), 3)
+                pygame.draw.rect(screen, game_res.YELLOW, (250, 370, 500, 40), 3)
             else:
-                pygame.draw.rect(screen, BLACK, (250, 350, 500, 40), 3)
+                pygame.draw.rect(screen, game_res.BLACK, (250, 370, 500, 40), 3)
                 
-            draw_text(input_text, menu_font, BLACK, 260, 355)
-            draw_text("Server Address:", menu_font, WHITE, 260, 320)
+            game_res.draw_text(screen, input_text, menu_font, game_res.BLACK, 260, 375)
+            game_res.draw_text(screen, "Server Address:", menu_font, game_res.WHITE, 260, 340)
         
         # Start button
-        pygame.draw.rect(screen, RED, (400, 450, 200, 60))
-        draw_text("START", menu_font, WHITE, 440, 465)
+        pygame.draw.rect(screen, game_res.RED, (400, 450, 200, 60))
+        pygame.draw.rect(screen, game_res.YELLOW, (400, 450, 200, 60), 2)
+        game_res.draw_text(screen, "START", menu_font, game_res.WHITE, 440, 465)
         
         # Handle events
         for event in pygame.event.get():
@@ -362,15 +299,15 @@ def main_menu():
                 mx, my = pygame.mouse.get_pos()
                 
                 # Host option
-                if 300 <= mx <= 700 and 200 <= my <= 250:
+                if 300 <= mx <= 700 and 220 <= my <= 270:
                     host_option = True
                     
                 # Join option
-                elif 300 <= mx <= 700 and 280 <= my <= 330:
+                elif 300 <= mx <= 700 and 300 <= my <= 350:
                     host_option = False
                     
                 # Server address input field
-                elif not host_option and 250 <= mx <= 750 and 350 <= my <= 390:
+                elif not host_option and 250 <= mx <= 750 and 370 <= my <= 410:
                     input_active = True
                 else:
                     input_active = False
@@ -380,7 +317,7 @@ def main_menu():
                     if host_option:
                         # Launch the server in a separate process
                         import subprocess
-                        subprocess.Popen([sys.executable, os.path.join(base_path, "socket_server.py")])
+                        subprocess.Popen([sys.executable, os.path.join(game_res.base_path, "socket_server.py")])
                         # Give the server a moment to start
                         pygame.time.delay(1000)
                         # Set server address to localhost
@@ -409,11 +346,13 @@ def main_menu():
                     input_active = False
                 elif event.key == pygame.K_BACKSPACE:
                     input_text = input_text[:-1]
+                elif event.key == pygame.K_ESCAPE:
+                    input_active = False
                 else:
                     input_text += event.unicode
         
         pygame.display.update()
-        clock.tick(60)
+        clock.tick(game_res.FPS)
     
     return host_option
 
@@ -423,8 +362,8 @@ is_host = main_menu()
 # Create fighters
 # The local player controls fighter_1 if they are player_id 1
 # and fighter_2 if they are player_id 2
-fighter_1 = Fighter(1, 200, 310, False, WARRIOR_DATA, warrior_sheet, WARRIOR_ANIMATION_STEPS, sword_fx, True)
-fighter_2 = Fighter(2, 700, 310, True, WIZARD_DATA, wizard_sheet, WIZARD_ANIMATION_STEPS, magic_fx, False)
+fighter_1 = Fighter(1, 200, 310, False, game_res.WARRIOR_DATA, warrior_sheet, game_res.WARRIOR_ANIMATION_STEPS, sword_fx, True)
+fighter_2 = Fighter(2, 700, 310, True, game_res.WIZARD_DATA, wizard_sheet, game_res.WIZARD_ANIMATION_STEPS, magic_fx, False)
 
 # Connect to server and start network thread
 connected = connect_to_server()
@@ -441,10 +380,10 @@ waiting_start_time = pygame.time.get_ticks()
 
 while waiting_for_connection and connected:
     # Draw background
-    draw_bg()
+    game_res.draw_bg(screen, bg_image)
     
     # Show connection status
-    draw_text(connection_status, menu_font, WHITE, 250, 250)
+    game_res.draw_text(screen, connection_status, menu_font, game_res.WHITE, 250, 250)
     
     # Check if game has started or if we need to timeout
     if game_started:
@@ -453,8 +392,8 @@ while waiting_for_connection and connected:
     # Check for timeout (10 seconds)
     current_time = pygame.time.get_ticks()
     if current_time - waiting_start_time > 10000:
-        draw_text("Waiting for opponent. Check server address.", menu_font, RED, 150, 350)
-        draw_text("Press ESC to return to menu or SPACE to continue waiting", menu_font, WHITE, 120, 400)
+        game_res.draw_text(screen, "Waiting for opponent. Check server address.", menu_font, game_res.RED, 150, 350)
+        game_res.draw_text(screen, "Press ESC to return to menu or SPACE to continue waiting", menu_font, game_res.WHITE, 120, 400)
         
         # Check for input
         for event in pygame.event.get():
@@ -498,7 +437,7 @@ while waiting_for_connection and connected:
             sys.exit()
     
     pygame.display.update()
-    clock.tick(60)
+    clock.tick(game_res.FPS)
 
 # Adjust fighter instances based on player ID
 if player_id == "2":
@@ -509,31 +448,31 @@ if player_id == "2":
 # Game loop
 run = True
 while run:
-    clock.tick(FPS)
+    clock.tick(game_res.FPS)
 
     # Draw background
-    draw_bg()
+    game_res.draw_bg(screen, bg_image)
 
     # Show connection status if not connected
     if not connected or not client_socket:
-        draw_text("Not connected to server", menu_font, RED, 300, 200)
-        draw_text("Press ESC to return to menu", menu_font, WHITE, 300, 250)
+        game_res.draw_text(screen, "Not connected to server", menu_font, game_res.RED, 300, 200)
+        game_res.draw_text(screen, "Press ESC to return to menu", menu_font, game_res.WHITE, 300, 250)
     else:
         # Show player stats
-        draw_health_bar(fighter_1.health, 20, 20)
-        draw_health_bar(fighter_2.health, 580, 20)
-        draw_text("P1: " + str(score[0]), score_font, RED, 20, 60)
-        draw_text("P2: " + str(score[1]), score_font, RED, 580, 60)
+        game_res.draw_health_bar(screen, fighter_1.health, 20, 20)
+        game_res.draw_health_bar(screen, fighter_2.health, 580, 20)
+        game_res.draw_text(screen, "P1: " + str(score[0]), score_font, game_res.RED, 20, 60)
+        game_res.draw_text(screen, "P2: " + str(score[1]), score_font, game_res.RED, 580, 60)
         
         # Show which player you are
         if player_id:
-            draw_text(f"You are Player {player_id}", score_font, WHITE, 400, 20)
+            game_res.draw_text(screen, f"You are Player {player_id}", score_font, game_res.WHITE, 400, 20)
 
         # Update countdown
         if intro_count <= 0:
             # Move fighters
-            fighter_1.move(SCREEN_WIDTH, SCREEN_HEIGHT, screen, fighter_2, round_over)
-            fighter_2.move(SCREEN_WIDTH, SCREEN_HEIGHT, screen, fighter_1, round_over)
+            fighter_1.move(game_res.SCREEN_WIDTH, game_res.SCREEN_HEIGHT, screen, fighter_2, round_over)
+            fighter_2.move(game_res.SCREEN_WIDTH, game_res.SCREEN_HEIGHT, screen, fighter_1, round_over)
             
             # Send local input and state to server (limit frequency for better performance)
             current_time = pygame.time.get_ticks()
@@ -567,7 +506,7 @@ while run:
                 print(f"Sending health update: {fighter_2.health}")
         else:
             # Display count timer
-            draw_text(str(intro_count), count_font, RED, SCREEN_WIDTH / 2, SCREEN_HEIGHT / 3)
+            game_res.draw_text(screen, str(intro_count), count_font, game_res.RED, game_res.SCREEN_WIDTH / 2, game_res.SCREEN_HEIGHT / 3)
             # Update count timer
             if (pygame.time.get_ticks() - last_count_update) >= 1000:
                 intro_count -= 1
@@ -605,11 +544,11 @@ while run:
             
             # Winner text
             if fighter_1.alive and not fighter_2.alive:
-                draw_text("Player 1 Wins!", score_font, WHITE, 400, 300)
+                game_res.draw_text(screen, "Player 1 Wins!", score_font, game_res.WHITE, 400, 300)
             elif fighter_2.alive and not fighter_1.alive:
-                draw_text("Player 2 Wins!", score_font, WHITE, 400, 300)
+                game_res.draw_text(screen, "Player 2 Wins!", score_font, game_res.WHITE, 400, 300)
                 
-            if pygame.time.get_ticks() - round_over_time > ROUND_OVER_COOLDOWN:
+            if pygame.time.get_ticks() - round_over_time > game_res.ROUND_OVER_COOLDOWN:
                 # Reset for new round
                 round_over = False
                 intro_count = 3
@@ -618,8 +557,8 @@ while run:
                 is_fighter1_local = fighter_1.is_local
                 is_fighter2_local = fighter_2.is_local
                 
-                fighter_1 = Fighter(1, 200, 310, False, WARRIOR_DATA, warrior_sheet, WARRIOR_ANIMATION_STEPS, sword_fx, is_fighter1_local)
-                fighter_2 = Fighter(2, 700, 310, True, WIZARD_DATA, wizard_sheet, WIZARD_ANIMATION_STEPS, magic_fx, is_fighter2_local)
+                fighter_1 = Fighter(1, 200, 310, False, game_res.WARRIOR_DATA, warrior_sheet, game_res.WARRIOR_ANIMATION_STEPS, sword_fx, is_fighter1_local)
+                fighter_2 = Fighter(2, 700, 310, True, game_res.WIZARD_DATA, wizard_sheet, game_res.WIZARD_ANIMATION_STEPS, magic_fx, is_fighter2_local)
                 
                 # Send round reset notification to server
                 send_message("round_reset", {})
