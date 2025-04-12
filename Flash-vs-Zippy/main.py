@@ -30,7 +30,7 @@ count_font, score_font, _, _ = game_res.load_fonts()
 
 # Create two instances of fighters
 fighter_1 = Fighter(1, 200, 310, False, game_res.WARRIOR_DATA, warrior_sheet, game_res.WARRIOR_ANIMATION_STEPS, sword_fx)
-fighter_2 = Fighter(2, 700, 310, True, game_res.WIZARD_DATA, wizard_sheet, game_res.WIZARD_ANIMATION_STEPS, magic_fx)
+fighter_2 = Fighter(2, 700, 310, False, game_res.WIZARD_DATA, wizard_sheet, game_res.WIZARD_ANIMATION_STEPS, magic_fx)
 
 # Game loop
 run = True

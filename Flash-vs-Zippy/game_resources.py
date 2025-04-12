@@ -30,12 +30,12 @@ class GameResources:
         self.WARRIOR_DATA = [self.WARRIOR_SIZE, self.WARRIOR_SCALE, self.WARRIOR_OFFSET]
         self.WARRIOR_ANIMATION_STEPS = [10, 8, 1, 7, 7, 3, 7]
         
-        # Fighter variables - Wizard
-        self.WIZARD_SIZE = 250
-        self.WIZARD_SCALE = 3
-        self.WIZARD_OFFSET = [112, 107]
+        # Fighter variables - Wizard (Flash)
+        self.WIZARD_SIZE = 128
+        self.WIZARD_SCALE = 2
+        self.WIZARD_OFFSET = [0, 0]
         self.WIZARD_DATA = [self.WIZARD_SIZE, self.WIZARD_SCALE, self.WIZARD_OFFSET]
-        self.WIZARD_ANIMATION_STEPS = [8, 8, 1, 8, 8, 3, 7]
+        self.WIZARD_ANIMATION_STEPS = [6, 6, 1, 6, 3, 6, 6]
         
         # Initialize audio
         mixer.init()
@@ -62,7 +62,7 @@ class GameResources:
         
         # Spritesheets
         warrior_sheet = pygame.image.load(os.path.join(self.base_path, "assets/images/warrior/Sprites/warrior.png")).convert_alpha()
-        wizard_sheet = pygame.image.load(os.path.join(self.base_path, "assets/images/wizard/Sprites/wizard.png")).convert_alpha()
+        wizard_sheet = pygame.image.load(os.path.join(self.base_path, "assets/images/flash/flash.png")).convert_alpha()
         
         # Victory image
         victory_img = pygame.image.load(os.path.join(self.base_path, "assets/images/icons/victory.png")).convert_alpha()

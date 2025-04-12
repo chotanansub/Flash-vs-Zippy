@@ -233,9 +233,19 @@ class Fighter():
 
     # Ensure players face each other
     if target.rect.centerx > self.rect.centerx:
-      self.flip = False
+      # Player 1 looks right when target is to the right
+      if self.player == 1:
+        self.flip = False
+      # Player 2 looks left when target is to the right
+      else:
+        self.flip = True  
     else:
-      self.flip = True
+      # Player 1 looks left when target is to the left
+      if self.player == 1:
+        self.flip = True
+      # Player 2 looks right when target is to the left
+      else:
+        self.flip = False
 
     # Apply attack cooldown
     if self.attack_cooldown > 0:
@@ -311,7 +321,7 @@ class Fighter():
       if attacking_rect.colliderect(target.rect):
         # Only apply damage if target is not in hit cooldown
         if target.hit_cooldown <= 0:
-          # Apply damage - reduced to 5 for more hits needed to win
+          # Apply damage
           prev_health = target.health
           target.health -= 10
           print(f"HIT! Health reduced from {prev_health} to {target.health}")
