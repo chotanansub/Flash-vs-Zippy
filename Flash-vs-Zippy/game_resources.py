@@ -24,11 +24,11 @@ class GameResources:
         self.ROUND_OVER_COOLDOWN = 2000
         
         # Fighter variables - Zippy (previously Warrior)
-        self.ZIPPY_SIZE = 162
-        self.ZIPPY_SCALE = 4
-        self.ZIPPY_OFFSET = [72, 56]
+        self.ZIPPY_SIZE = 128
+        self.ZIPPY_SCALE = 2
+        self.ZIPPY_OFFSET = [0, 0]
         self.ZIPPY_DATA = [self.ZIPPY_SIZE, self.ZIPPY_SCALE, self.ZIPPY_OFFSET]
-        self.ZIPPY_ANIMATION_STEPS = [10, 8, 1, 7, 7, 3, 7]
+        self.ZIPPY_ANIMATION_STEPS = [6, 6, 3, 6, 3, 4, 6]
         
         # Fighter variables - Flash (previously Wizard)
         self.FLASH_SIZE = 128
@@ -68,7 +68,7 @@ class GameResources:
         bg_image = pygame.image.load(os.path.join(self.base_path, "assets/images/background/background.png")).convert_alpha()
         
         # Spritesheets
-        zippy_sheet = pygame.image.load(os.path.join(self.base_path, "assets/images/warrior/Sprites/warrior.png")).convert_alpha()
+        zippy_sheet = pygame.image.load(os.path.join(self.base_path, "assets/images/zippy/zippy.png")).convert_alpha()
         flash_sheet = pygame.image.load(os.path.join(self.base_path, "assets/images/flash/flash.png")).convert_alpha()
         
         # Victory image
