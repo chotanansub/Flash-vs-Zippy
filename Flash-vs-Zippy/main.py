@@ -29,7 +29,7 @@ bg_image, zippy_sheet, flash_sheet, victory_img = game_res.load_images()
 count_font, score_font, _, _ = game_res.load_fonts()
 
 # Create two instances of fighters
-fighter_1 = Fighter(1, 200, 310, False, game_res.ZIPPY_DATA, zippy_sheet, game_res.ZIPPY_ANIMATION_STEPS, (zippy_attack1_fx, zippy_attack2_fx))
+fighter_1 = Fighter(1, 200, 310, True, game_res.ZIPPY_DATA, zippy_sheet, game_res.ZIPPY_ANIMATION_STEPS, (zippy_attack1_fx, zippy_attack2_fx))
 fighter_2 = Fighter(2, 700, 310, False, game_res.FLASH_DATA, flash_sheet, game_res.FLASH_ANIMATION_STEPS, (flash_attack1_fx, flash_attack2_fx))
 
 # Game loop
@@ -90,7 +90,7 @@ while run:
         if pygame.time.get_ticks() - round_over_time > game_res.ROUND_OVER_COOLDOWN:
             round_over = False
             intro_count = 3
-            fighter_1 = Fighter(1, 200, 310, False, game_res.ZIPPY_DATA, zippy_sheet, game_res.ZIPPY_ANIMATION_STEPS, (zippy_attack1_fx, zippy_attack2_fx))
+            fighter_1 = Fighter(1, 200, 310, True, game_res.ZIPPY_DATA, zippy_sheet, game_res.ZIPPY_ANIMATION_STEPS, (zippy_attack1_fx, zippy_attack2_fx))
             fighter_2 = Fighter(2, 700, 310, False, game_res.FLASH_DATA, flash_sheet, game_res.FLASH_ANIMATION_STEPS, (flash_attack1_fx, flash_attack2_fx))
     # Event handler
     for event in pygame.event.get():

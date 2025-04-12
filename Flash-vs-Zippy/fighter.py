@@ -6,7 +6,7 @@ class Fighter():
     self.size = data[0]
     self.image_scale = data[1]
     self.offset = data[2]
-    self.flip = flip
+    self.flip = flip  # Initial flip state
     self.animation_list = self.load_images(sprite_sheet, animation_steps)
     self.action = 0  # 0:idle #1:run #2:jump #3:attack1 #4: attack2 #5:hit #6:death
     self.frame_index = 0
@@ -234,30 +234,31 @@ class Fighter():
       self.jump = False
       dy = screen_height - 110 - self.rect.bottom
 
-    # Ensure players face each other
-    if target.rect.centerx > self.rect.centerx:
-      # Player 1 looks right when target is to the right
-      if self.player == 1:
-        self.flip = False
-      # Player 2 looks left when target is to the right
-      else:
-        self.flip = True  
-    else:
-      # Player 1 looks left when target is to the left
-      if self.player == 1:
-        self.flip = True
-      # Player 2 looks right when target is to the left
-      else:
-        self.flip = False
-
-    # Apply attack cooldown
-    if self.attack_cooldown > 0:
-      self.attack_cooldown -= 1
-
     # Update player position
     self.rect.x += dx
     self.rect.y += dy
 
+    # Adjust facing direction based on relative positions
+    # For player 1 (Zippy), normal flip orientation is True (facing right)
+    # For player 2 (Flash), normal flip orientation is False (facing left)
+    if self.player == 1:  # Zippy
+      if target.rect.centerx < self.rect.centerx:
+        # Target is to the left, so Zippy should face left
+        self.flip = False  # Flip to face left
+      else:
+        # Target is to the right, so Zippy should face right
+        self.flip = True   # Normal orientation for Zippy
+    else:  # Flash (player 2)
+      if target.rect.centerx > self.rect.centerx:
+        # Target is to the right, so Flash should face right
+        self.flip = True   # Flip to face right
+      else:
+        # Target is to the left, so Flash should face left
+        self.flip = False  # Normal orientation for Flash
+
+    # Apply attack cooldown
+    if self.attack_cooldown > 0:
+      self.attack_cooldown -= 1
 
   def update(self):
     # Check what action the player is performing
@@ -320,7 +321,6 @@ class Fighter():
     if self.hit_cooldown > 0:
       self.hit_cooldown -= 1
 
-
   def attack(self, target):
     if self.attack_cooldown == 0:
       # Execute attack
@@ -335,16 +335,34 @@ class Fighter():
       # Create a hitbox based on attack type - attack2 has double size
       if self.attack_type == 2:
         # Larger hitbox for attack type 2 (twice as large)
-        attacking_rect = pygame.Rect(self.rect.centerx - (5.0 * self.rect.width * self.flip), 
-                                   self.rect.y, 
-                                   5.0 * self.rect.width, 
-                                   self.rect.height)
+        if self.flip:
+          # Zippy's normal orientation is True (flip=True), Flash's flipped orientation is True
+          # Both of them facing right, so attack hitbox should be to the right
+          attacking_rect = pygame.Rect(self.rect.centerx, 
+                                     self.rect.y, 
+                                     5.0 * self.rect.width, 
+                                     self.rect.height)
+        else:
+          # Zippy's flipped orientation is False, Flash's normal orientation is False
+          # Both of them facing left, so attack hitbox should be to the left
+          attacking_rect = pygame.Rect(self.rect.centerx - 5.0 * self.rect.width, 
+                                     self.rect.y, 
+                                     5.0 * self.rect.width, 
+                                     self.rect.height)
       else:
         # Regular hitbox for attack type 1
-        attacking_rect = pygame.Rect(self.rect.centerx - (2.5 * self.rect.width * self.flip), 
-                                   self.rect.y, 
-                                   2.5 * self.rect.width, 
-                                   self.rect.height)
+        if self.flip:
+          # Facing right
+          attacking_rect = pygame.Rect(self.rect.centerx, 
+                                     self.rect.y, 
+                                     2.5 * self.rect.width, 
+                                     self.rect.height)
+        else:
+          # Facing left
+          attacking_rect = pygame.Rect(self.rect.centerx - 2.5 * self.rect.width, 
+                                     self.rect.y, 
+                                     2.5 * self.rect.width, 
+                                     self.rect.height)
       
       if attacking_rect.colliderect(target.rect):
         # Only apply damage if target is not in hit cooldown
@@ -355,7 +373,6 @@ class Fighter():
           print(f"HIT! Health reduced from {prev_health} to {target.health}")
           target.hit = True
           target.hit_cooldown = 45  # Set the hit cooldown
-
 
   def update_action(self, new_action):
     # Check if the new action is different to the previous one
@@ -378,10 +395,10 @@ class Fighter():
       extra_height_offset = img.get_height() * 0.1  # Lift the animation higher
       
       # If attacking with attack2, adjust position for the larger animation
-      if self.flip:  # Facing left
+      if self.flip:  # Facing right
         surface.blit(img, (self.rect.x - offset_x - img.get_width()/4, 
                           self.rect.y - offset_y - img.get_height()/4 - extra_height_offset))
-      else:  # Facing right
+      else:  # Facing left
         surface.blit(img, (self.rect.x - offset_x - img.get_width()/4, 
                           self.rect.y - offset_y - img.get_height()/4 - extra_height_offset))
     else:

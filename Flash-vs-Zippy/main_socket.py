@@ -362,7 +362,7 @@ is_host = main_menu()
 # Create fighters
 # The local player controls fighter_1 if they are player_id 1
 # and fighter_2 if they are player_id 2
-fighter_1 = Fighter(1, 200, 310, False, game_res.ZIPPY_DATA, zippy_sheet, game_res.ZIPPY_ANIMATION_STEPS, (zippy_attack1_fx, zippy_attack2_fx), True)
+fighter_1 = Fighter(1, 200, 310, True, game_res.ZIPPY_DATA, zippy_sheet, game_res.ZIPPY_ANIMATION_STEPS, (zippy_attack1_fx, zippy_attack2_fx), True)
 fighter_2 = Fighter(2, 700, 310, False, game_res.FLASH_DATA, flash_sheet, game_res.FLASH_ANIMATION_STEPS, (flash_attack1_fx, flash_attack2_fx), False)
 
 # Connect to server and start network thread
@@ -557,7 +557,7 @@ while run:
                 is_fighter1_local = fighter_1.is_local
                 is_fighter2_local = fighter_2.is_local
                 
-                fighter_1 = Fighter(1, 200, 310, False, game_res.ZIPPY_DATA, zippy_sheet, game_res.ZIPPY_ANIMATION_STEPS, (zippy_attack1_fx, zippy_attack2_fx), is_fighter1_local)
+                fighter_1 = Fighter(1, 200, 310, True, game_res.ZIPPY_DATA, zippy_sheet, game_res.ZIPPY_ANIMATION_STEPS, (zippy_attack1_fx, zippy_attack2_fx), is_fighter1_local)
                 fighter_2 = Fighter(2, 700, 310, False, game_res.FLASH_DATA, flash_sheet, game_res.FLASH_ANIMATION_STEPS, (flash_attack1_fx, flash_attack2_fx), is_fighter2_local)
                 
                 # Send round reset notification to server
