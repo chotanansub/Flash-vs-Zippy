@@ -198,33 +198,63 @@ class GameServer:
                 # Player is sending their current state
                 state = data.get("state", {})
                 prev_state = self.player_states.get(player_id, {})
+                target_player_id = data.get("player_id", player_id)
+                priority = data.get("priority", "normal")
                 
-                # Check if health has changed, prioritize health synchronization
-                if "health" in state and "health" in prev_state:
-                    if state["health"] < prev_state["health"]:
-                        logger.info(f"Health change detected for Player {player_id}: {prev_state['health']} -> {state['health']}")
+                # If a specific player_id is provided, this is updating another player's state
+                # (e.g., when attacker reports that opponent was hit)
+                if target_player_id != player_id:
+                    # This is a health update for another player
+                    # Store in that player's state
+                    if target_player_id in self.player_states:
+                        # Only update health and hit status from another player's report
+                        # Don't override the entire state
+                        target_prev_state = self.player_states.get(target_player_id, {})
                         
-                # Store the updated state
-                self.player_states[player_id] = state
-                
-                # Forward state to the other player immediately on health change
-                other_player = "2" if player_id == "1" else "1"
-                if "health" in state and "health" in prev_state and state["health"] < prev_state["health"]:
-                    if other_player in self.player_sockets:
-                        try:
-                            # Send immediate health update to opponent
-                            self.send_message(self.player_sockets[other_player], {
-                                "type": "game_state",
-                                "player_states": self.player_states,
-                                "round_over": self.round_over
-                            })
-                            logger.info(f"Sent immediate health update to Player {other_player}")
-                        except:
-                            logger.error(f"Failed to send immediate health update to Player {other_player}")
-                
-                # Broadcast complete state periodically
-                if self.player_states.get("1") and self.player_states.get("2"):
-                    self.broadcast_game_state()
+                        # Check for health change
+                        if "health" in state and ("health" not in target_prev_state or 
+                                                state["health"] < target_prev_state["health"]):
+                            # Only allow health to decrease, never increase
+                            target_prev_state["health"] = state["health"]
+                            target_prev_state["hit"] = True
+                            target_prev_state["hit_cooldown"] = 45
+                            
+                            logger.info(f"Player {player_id} reported health change for Player {target_player_id}: {state['health']}")
+                            
+                            # Update stored state
+                            self.player_states[target_player_id] = target_prev_state
+                            
+                            # Notify immediately
+                            self.broadcast_game_state()
+                else:
+                    # This is normal state update for the player's own state
+                    # Check if health has changed, prioritize health synchronization
+                    if "health" in state and "health" in prev_state:
+                        if state["health"] < prev_state["health"]:
+                            logger.info(f"Health change detected for Player {player_id}: {prev_state['health']} -> {state['health']}")
+                            
+                    # Store the updated state
+                    self.player_states[player_id] = state
+                    
+                    # Forward state to the other player immediately on health change or high priority
+                    other_player = "2" if player_id == "1" else "1"
+                    if (("health" in state and "health" in prev_state and state["health"] < prev_state["health"]) or 
+                        priority == "high"):
+                        if other_player in self.player_sockets:
+                            try:
+                                # Send immediate health update to opponent
+                                self.send_message(self.player_sockets[other_player], {
+                                    "type": "game_state",
+                                    "player_states": self.player_states,
+                                    "round_over": self.round_over
+                                })
+                                logger.info(f"Sent immediate health update to Player {other_player}")
+                            except:
+                                logger.error(f"Failed to send immediate health update to Player {other_player}")
+                    
+                    # Broadcast complete state periodically
+                    if self.player_states.get("1") and self.player_states.get("2"):
+                        self.broadcast_game_state()
             
             elif msg_type == "round_over":
                 logger.info(f"Round over received from Player {player_id}")

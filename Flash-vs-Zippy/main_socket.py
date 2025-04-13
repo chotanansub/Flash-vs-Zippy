@@ -214,10 +214,22 @@ def network_thread_function():
             elif msg_type == "opponent_input":
                 # Update opponent's input
                 input_data = message.get("input", {})
+                
+                # Make sure we apply the input to the non-local fighter
                 if player_id == "1":
-                    fighter_2.set_remote_input(input_data)
+                    # We're player 1, so opponent is player 2 (fighter_2)
+                    if not fighter_2.is_local:  # Double-check that fighter_2 is indeed non-local
+                        fighter_2.set_remote_input(input_data)
+                        print(f"Received remote input for fighter_2: {input_data}")
                 else:
-                    fighter_1.set_remote_input(input_data)
+                    # We're player 2, so opponent is player 1 (fighter_1)
+                    if not fighter_1.is_local:  # Double-check that fighter_1 is indeed non-local
+                        fighter_1.set_remote_input(input_data)
+                        print(f"Received remote input for fighter_1: {input_data}")
+                
+                # Debug log the remote input to check if attack signals are coming through
+                if input_data.get("attack1") or input_data.get("attack2"):
+                    print(f"Remote attack input received: {input_data}")
                     
             elif msg_type == "game_state":
                 # Update game state from server
@@ -516,74 +528,76 @@ while run:
             fighter_2.move(game_res.SCREEN_WIDTH, game_res.SCREEN_HEIGHT, screen, fighter_1, round_over)
             
             # Check if either fighter health has changed since last update
-            # Only monitor health changes for the opponent fighter when you're the attacker
+            # We need to track both who caused the damage and whose health changed
             if player_id == "1":
-                # Player 1 only monitors changes to fighter_2's health (the opponent)
-                if fighter_2.health != last_health_check[1]:
+                # We are player 1, so we control fighter_1
+                
+                # If fighter_2's health decreased and fighter_1 was attacking, 
+                # this was a successful hit by our local fighter
+                if fighter_2.health < last_health_check[1] and fighter_1.attacking:
                     force_update_health = True
-                    print(f"Fighter 2 health changed from {last_health_check[1]} to {fighter_2.health}")
-                    last_health_check[1] = fighter_2.health
-                # Keep our local health record up to date without triggering updates
+                    print(f"LOCAL HIT: Fighter 2 health changed from {last_health_check[1]} to {fighter_2.health}")
+                    
+                    # Send a health update specifically for the opponent
+                    opponent_state = {"health": fighter_2.health, "hit": True, "hit_cooldown": 45}
+                    send_message("state_update", {
+                        "state": opponent_state,
+                        "player_id": "2",  # Explicitly identify this is player 2's health
+                        "priority": "high"
+                    })
+                    print("Sent high priority attack success update for opponent (Player 2)")
+                    
+                last_health_check[1] = fighter_2.health
+                
+                # Always keep our local health check values updated
                 last_health_check[0] = fighter_1.health
+                
             else:  # player_id == "2"
-                # Player 2 only monitors changes to fighter_1's health (the opponent)
-                if fighter_1.health != last_health_check[0]:
+                # We are player 2, so we control fighter_2
+                
+                # If fighter_1's health decreased and fighter_2 was attacking, 
+                # this was a successful hit by our local fighter
+                if fighter_1.health < last_health_check[0] and fighter_2.attacking:
                     force_update_health = True
-                    print(f"Fighter 1 health changed from {last_health_check[0]} to {fighter_1.health}")
-                    last_health_check[0] = fighter_1.health
-                # Keep our local health record up to date without triggering updates
+                    print(f"LOCAL HIT: Fighter 1 health changed from {last_health_check[0]} to {fighter_1.health}")
+                    
+                    # Send a health update specifically for the opponent
+                    opponent_state = {"health": fighter_1.health, "hit": True, "hit_cooldown": 45}
+                    send_message("state_update", {
+                        "state": opponent_state,
+                        "player_id": "1",  # Explicitly identify this is player 1's health
+                        "priority": "high"
+                    })
+                    print("Sent high priority attack success update for opponent (Player 1)")
+                    
+                last_health_check[0] = fighter_1.health
+                
+                # Always keep our local health check values updated
                 last_health_check[1] = fighter_2.health
             
-            # Send local input and state to server (send every 2nd frame for regular updates)
+            # Send local input and state to server regularly
             if current_time - last_sent_update_time >= 33 or force_update_health:  # About every 2nd frame at 60fps
                 if player_id == "1":
                     # Send input data
                     input_data = fighter_1.get_input()
                     send_message("input", {"input": input_data})
                     
-                    # Send state data
+                    # Send state data for our controlled fighter
                     state_data = fighter_1.get_state()
-                    if force_update_health:
-                        # For health updates, mark as high priority
-                        send_message("state_update", {"state": state_data, "priority": "high"})
-                        print("Sent high priority health update")
-                    else:
-                        send_message("state_update", {"state": state_data})
-                    
-                    # Only send the state of the fighter that was hit (opponent)
-                    if force_update_health:
-                        # For health updates, explicitly identify this as opponent health
-                        opponent_state = fighter_2.get_state()
-                        send_message("state_update", {
-                            "state": opponent_state, 
-                            "player_id": "2",  # Explicitly identify which fighter this is
-                            "priority": "high"
-                        })
-                        print("Sent high priority health update for opponent (Player 2)")
+                    send_message("state_update", {"state": state_data})
                     
                 else:  # player_id == "2"
                     # Send input data
                     input_data = fighter_2.get_input()
                     send_message("input", {"input": input_data})
                     
-                    # Send state data
+                    # Send state data for our controlled fighter
                     state_data = fighter_2.get_state()
                     send_message("state_update", {"state": state_data})
-                    
-                    # Only send the state of the fighter that was hit (opponent)
-                    if force_update_health:
-                        # For health updates, explicitly identify this as opponent health
-                        opponent_state = fighter_1.get_state()
-                        send_message("state_update", {
-                            "state": opponent_state, 
-                            "player_id": "1",  # Explicitly identify which fighter this is
-                            "priority": "high"
-                        })
-                        print("Sent high priority health update for opponent (Player 1)")
                 
                 last_sent_update_time = current_time
                 force_update_health = False
-            
+                
         else:
             # Display count timer
             game_res.draw_text(screen, str(intro_count), count_font, game_res.RED, game_res.SCREEN_WIDTH / 2, game_res.SCREEN_HEIGHT / 3)
