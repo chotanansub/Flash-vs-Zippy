@@ -47,6 +47,11 @@ HEADER_SIZE = 10  # Size of message length header
 # Flag to indicate if we need to stop network thread
 stop_network_thread = False
 
+# FPS tracking variables
+fps_font = pygame.font.Font(None, 36)
+fps_update_time = 0
+current_fps = 0
+
 # Function to connect to the server
 def connect_to_server():
     global client_socket, player_id, connection_status, opponent_id
@@ -223,9 +228,34 @@ def network_thread_function():
                 if "1" in states and "2" in states:
                     # Update opponent's state (our state is maintained locally)
                     if player_id == "1":
+                        # Check if health changed
+                        old_health = fighter_2.health
                         fighter_2.set_state(states.get("2", {}))
+                        if fighter_2.health < old_health:
+                            print(f"Health sync: Player 2 health changed from {old_health} to {fighter_2.health}")
                     else:
+                        # Check if health changed
+                        old_health = fighter_1.health
                         fighter_1.set_state(states.get("1", {}))
+                        if fighter_1.health < old_health:
+                            print(f"Health sync: Player 1 health changed from {old_health} to {fighter_1.health}")
+            
+            elif msg_type == "state_update":
+                # Process individual state update
+                state = message.get("state", {})
+                target_player_id = message.get("player_id")
+                
+                # Only apply the update if it's for a specific fighter
+                if target_player_id == "1":
+                    old_health = fighter_1.health
+                    fighter_1.set_state(state)
+                    if fighter_1.health < old_health:
+                        print(f"Direct health update: Player 1 health changed from {old_health} to {fighter_1.health}")
+                elif target_player_id == "2":
+                    old_health = fighter_2.health
+                    fighter_2.set_state(state)
+                    if fighter_2.health < old_health:
+                        print(f"Direct health update: Player 2 health changed from {old_health} to {fighter_2.health}")
             
             elif msg_type == "error":
                 connection_status = f"Server error: {message.get('message', 'Unknown error')}"
@@ -449,8 +479,13 @@ if player_id == "2":
 
 # Game loop
 run = True
+last_health_check = [100, 100]  # Store last health values for both fighters
+last_sent_update_time = 0
+force_update_health = False
+
 while run:
     clock.tick(game_res.FPS)
+    current_time = pygame.time.get_ticks()
 
     # Draw background
     game_res.draw_bg(screen, bg_image)
@@ -480,36 +515,75 @@ while run:
             fighter_1.move(game_res.SCREEN_WIDTH, game_res.SCREEN_HEIGHT, screen, fighter_2, round_over)
             fighter_2.move(game_res.SCREEN_WIDTH, game_res.SCREEN_HEIGHT, screen, fighter_1, round_over)
             
-            # Send local input and state to server (limit frequency for better performance)
-            current_time = pygame.time.get_ticks()
-            if current_time % 2 == 0:  #  send every 2nd frame
+            # Check if either fighter health has changed since last update
+            # Only monitor health changes for the opponent fighter when you're the attacker
+            if player_id == "1":
+                # Player 1 only monitors changes to fighter_2's health (the opponent)
+                if fighter_2.health != last_health_check[1]:
+                    force_update_health = True
+                    print(f"Fighter 2 health changed from {last_health_check[1]} to {fighter_2.health}")
+                    last_health_check[1] = fighter_2.health
+                # Keep our local health record up to date without triggering updates
+                last_health_check[0] = fighter_1.health
+            else:  # player_id == "2"
+                # Player 2 only monitors changes to fighter_1's health (the opponent)
+                if fighter_1.health != last_health_check[0]:
+                    force_update_health = True
+                    print(f"Fighter 1 health changed from {last_health_check[0]} to {fighter_1.health}")
+                    last_health_check[0] = fighter_1.health
+                # Keep our local health record up to date without triggering updates
+                last_health_check[1] = fighter_2.health
+            
+            # Send local input and state to server (send every 2nd frame for regular updates)
+            if current_time - last_sent_update_time >= 33 or force_update_health:  # About every 2nd frame at 60fps
                 if player_id == "1":
+                    # Send input data
                     input_data = fighter_1.get_input()
                     send_message("input", {"input": input_data})
                     
-                    # Send local fighter state to server
+                    # Send state data
                     state_data = fighter_1.get_state()
-                    send_message("state_update", {"state": state_data})
-                else:
+                    if force_update_health:
+                        # For health updates, mark as high priority
+                        send_message("state_update", {"state": state_data, "priority": "high"})
+                        print("Sent high priority health update")
+                    else:
+                        send_message("state_update", {"state": state_data})
+                    
+                    # Only send the state of the fighter that was hit (opponent)
+                    if force_update_health:
+                        # For health updates, explicitly identify this as opponent health
+                        opponent_state = fighter_2.get_state()
+                        send_message("state_update", {
+                            "state": opponent_state, 
+                            "player_id": "2",  # Explicitly identify which fighter this is
+                            "priority": "high"
+                        })
+                        print("Sent high priority health update for opponent (Player 2)")
+                    
+                else:  # player_id == "2"
+                    # Send input data
                     input_data = fighter_2.get_input()
                     send_message("input", {"input": input_data})
                     
-                    # Send local fighter state to server
+                    # Send state data
                     state_data = fighter_2.get_state()
                     send_message("state_update", {"state": state_data})
+                    
+                    # Only send the state of the fighter that was hit (opponent)
+                    if force_update_health:
+                        # For health updates, explicitly identify this as opponent health
+                        opponent_state = fighter_1.get_state()
+                        send_message("state_update", {
+                            "state": opponent_state, 
+                            "player_id": "1",  # Explicitly identify which fighter this is
+                            "priority": "high"
+                        })
+                        print("Sent high priority health update for opponent (Player 1)")
+                
+                last_sent_update_time = current_time
+                force_update_health = False
             
-            # But always send health updates immediately when health changes
-            # This ensures hit registration is properly synchronized
-            if player_id == "1" and fighter_1.health < 100 and fighter_1.hit_cooldown == 45:
-                # Health just changed, send update immediately
-                state_data = fighter_1.get_state()
-                send_message("state_update", {"state": state_data})
-                print(f"Sending health update: {fighter_1.health}")
-            elif player_id == "2" and fighter_2.health < 100 and fighter_2.hit_cooldown == 45:
-                # Health just changed, send update immediately
-                state_data = fighter_2.get_state()
-                send_message("state_update", {"state": state_data})
-                print(f"Sending health update: {fighter_2.health}")
         else:
             # Display count timer
             game_res.draw_text(screen, str(intro_count), count_font, game_res.RED, game_res.SCREEN_WIDTH / 2, game_res.SCREEN_HEIGHT / 3)
@@ -572,9 +646,22 @@ while run:
                 fighter_2 = Fighter(2, 700, 310, False, game_res.FLASH_DATA, flash_sheet, game_res.FLASH_ANIMATION_STEPS, 
                                   (flash_attack1_fx, flash_attack2_fx), is_fighter2_local, score_font)
                 
+                # Reset health check values
+                last_health_check = [100, 100]
+                
                 # Send round reset notification to server
                 send_message("round_reset", {})
                 print("Round reset - new fighters created")
+
+    # Update FPS counter once per second
+    if pygame.time.get_ticks() - fps_update_time > 1000:  # Update every second
+        current_fps = int(clock.get_fps())
+        fps_update_time = pygame.time.get_ticks()
+
+    # Display FPS
+    fps_text = f"FPS: {current_fps}"
+    fps_surf = fps_font.render(fps_text, True, game_res.WHITE)
+    screen.blit(fps_surf, (10, game_res.SCREEN_HEIGHT - 40))
 
     # Event handler
     for event in pygame.event.get():

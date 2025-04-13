@@ -60,52 +60,96 @@ class Fighter():
     }
 
   def set_state(self, state):
-    """Set the state of the fighter from network data"""
-    if not state:
-      return
+      """Set the state of the fighter from network data"""
+      if not state:
+          return
       
-    self.rect.x = state.get("x", self.rect.x)
-    self.rect.y = state.get("y", self.rect.y)
-    self.vel_y = state.get("vel_y", self.vel_y)
-    self.running = state.get("running", self.running)
-    self.jump = state.get("jump", self.jump)
-    self.attacking = state.get("attacking", self.attacking)
-    self.attack_type = state.get("attack_type", self.attack_type)
-    self.attack_cooldown = state.get("attack_cooldown", self.attack_cooldown)
-    
-    # Health synchronization - always take the lower health value
-    # This ensures hits aren't "missed" in sync
-    remote_health = state.get("health", self.health)
-    if remote_health < self.health:
-      self.health = remote_health
-      # If health decreased, ensure we show the hit animation
+      # Always prioritize health updates
+      remote_health = state.get("health", self.health)
+      if remote_health < self.health:
+          # Health decreased - definitely apply this change
+          old_health = self.health
+          self.health = remote_health
+          print(f"Health sync: {old_health} -> {remote_health}")
+          
+          # If health decreased, ensure we show the hit animation
+          if not self.hit:
+              self.hit = True
+              self.hit_cooldown = 45
+      
+      # Update the rest of the state
+      self.rect.x = state.get("x", self.rect.x)
+      self.rect.y = state.get("y", self.rect.y)
+      self.vel_y = state.get("vel_y", self.vel_y)
+      self.running = state.get("running", self.running)
+      self.jump = state.get("jump", self.jump)
+      self.attacking = state.get("attacking", self.attacking)
+      self.attack_type = state.get("attack_type", self.attack_type)
+      self.attack_cooldown = state.get("attack_cooldown", self.attack_cooldown)
+      
+      # Only update hit state if we're not in hit cooldown from a health change
       if self.hit_cooldown <= 0:
-        self.hit = True
-        self.hit_cooldown = 45
-    
-    # Only update hit state if we're not in hit cooldown
-    if self.hit_cooldown <= 0:
-      new_hit = state.get("hit", self.hit)
-      # If this is a new hit, set the cooldown
-      if new_hit and not self.hit:
-        self.hit = True
-        self.hit_cooldown = 45  # Set cooldown (slightly less than animation duration)
-      elif not new_hit:
-        self.hit = False
-    
-    # Get hit cooldown from state, but don't override if our local cooldown is higher
-    remote_hit_cooldown = state.get("hit_cooldown", 0)
-    if remote_hit_cooldown > self.hit_cooldown:
-      self.hit_cooldown = remote_hit_cooldown
-    
-    self.alive = state.get("alive", self.alive)
-    
-    # Don't override animation states if we're in the middle of a hit animation
-    if self.action != 5 or self.frame_index == 0:
-      self.action = state.get("action", self.action)
-      self.frame_index = state.get("frame_index", self.frame_index)
-    
-    self.flip = state.get("flip", self.flip)
+          new_hit = state.get("hit", self.hit)
+          if new_hit and not self.hit:
+              self.hit = True
+              self.hit_cooldown = 45
+          elif not new_hit:
+              self.hit = False
+      
+      self.alive = state.get("alive", self.alive)
+      
+      # Don't override animation states if we're in the middle of a hit animation
+      if self.action != 5 or self.frame_index == 0:
+          self.action = state.get("action", self.action)
+          self.frame_index = state.get("frame_index", self.frame_index)
+      
+      self.flip = state.get("flip", self.flip)
+      """Set the state of the fighter from network data"""
+      if not state:
+        return
+        
+      self.rect.x = state.get("x", self.rect.x)
+      self.rect.y = state.get("y", self.rect.y)
+      self.vel_y = state.get("vel_y", self.vel_y)
+      self.running = state.get("running", self.running)
+      self.jump = state.get("jump", self.jump)
+      self.attacking = state.get("attacking", self.attacking)
+      self.attack_type = state.get("attack_type", self.attack_type)
+      self.attack_cooldown = state.get("attack_cooldown", self.attack_cooldown)
+      
+      # Health synchronization - always take the lower health value
+      # This ensures hits aren't "missed" in sync
+      remote_health = state.get("health", self.health)
+      if remote_health < self.health:
+        self.health = remote_health
+        # If health decreased, ensure we show the hit animation
+        if self.hit_cooldown <= 0:
+          self.hit = True
+          self.hit_cooldown = 45
+      
+      # Only update hit state if we're not in hit cooldown
+      if self.hit_cooldown <= 0:
+        new_hit = state.get("hit", self.hit)
+        # If this is a new hit, set the cooldown
+        if new_hit and not self.hit:
+          self.hit = True
+          self.hit_cooldown = 45  # Set cooldown (slightly less than animation duration)
+        elif not new_hit:
+          self.hit = False
+      
+      # Get hit cooldown from state, but don't override if our local cooldown is higher
+      remote_hit_cooldown = state.get("hit_cooldown", 0)
+      if remote_hit_cooldown > self.hit_cooldown:
+        self.hit_cooldown = remote_hit_cooldown
+      
+      self.alive = state.get("alive", self.alive)
+      
+      # Don't override animation states if we're in the middle of a hit animation
+      if self.action != 5 or self.frame_index == 0:
+        self.action = state.get("action", self.action)
+        self.frame_index = state.get("frame_index", self.frame_index)
+      
+      self.flip = state.get("flip", self.flip)
 
   def set_remote_input(self, input_data):
     """Set the remote input data for network play"""
