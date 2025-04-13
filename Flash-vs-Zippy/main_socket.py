@@ -482,7 +482,7 @@ while run:
             
             # Send local input and state to server (limit frequency for better performance)
             current_time = pygame.time.get_ticks()
-            if current_time % 3 == 0:  # Only send every 3rd frame
+            if current_time % 2 == 0:  #  send every 2nd frame
                 if player_id == "1":
                     input_data = fighter_1.get_input()
                     send_message("input", {"input": input_data})
