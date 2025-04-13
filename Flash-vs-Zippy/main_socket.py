@@ -508,8 +508,12 @@ while run:
         game_res.draw_text(screen, "Press ESC to return to menu", menu_font, game_res.WHITE, 300, 250)
     else:
         # Show player stats
-        game_res.draw_health_bar(screen, fighter_1.health, 20, 20)
-        game_res.draw_health_bar(screen, fighter_2.health, 580, 20)
+        if player_id == "1":
+            game_res.draw_health_bar(screen, fighter_1.health, 20, 20)
+            game_res.draw_health_bar(screen, fighter_2.health, 580, 20)
+        else:
+            game_res.draw_health_bar(screen, fighter_2.health, 20, 20)
+            game_res.draw_health_bar(screen, fighter_1.health, 580, 20)
 
         game_res.draw_text(screen, "P1: " + str(score[0]), score_font, game_res.BLACK, 22, 62)
         game_res.draw_text(screen, "P2: " + str(score[1]), score_font, game_res.BLACK, 582, 62)
