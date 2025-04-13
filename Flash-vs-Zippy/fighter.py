@@ -323,57 +323,60 @@ class Fighter():
       self.hit_cooldown -= 1
 
   def attack(self, target):
+    hit_successful = False  # Track whether a hit occurred
+    
     if self.attack_cooldown == 0:
-      # Execute attack
-      self.attacking = True
-      
-      # Play the appropriate sound based on attack type
-      if self.attack_type == 1:
-        self.attack_sounds[0].play()  # Attack1 sound
-      elif self.attack_type == 2:
-        self.attack_sounds[1].play()  # Attack2 sound
-      
-      # Create a hitbox based on attack type - attack2 has double size
-      if self.attack_type == 2:
-        # Larger hitbox for attack type 2 (twice as large)
-        if self.flip:
-          # Zippy's normal orientation is True (flip=True), Flash's flipped orientation is True
-          # Both of them facing right, so attack hitbox should be to the right
-          attacking_rect = pygame.Rect(self.rect.centerx, 
-                                     self.rect.y, 
-                                     5.0 * self.rect.width, 
-                                     self.rect.height)
+        # Execute attack
+        self.attacking = True
+        
+        # Play the appropriate sound based on attack type
+        if self.attack_type == 1:
+            self.attack_sounds[0].play()  # Attack1 sound
+        elif self.attack_type == 2:
+            self.attack_sounds[1].play()  # Attack2 sound
+        
+        # Create a hitbox based on attack type - attack2 has double size
+        if self.attack_type == 2:
+            # Larger hitbox for attack type 2 (twice as large)
+            if self.flip:
+                # Facing right
+                attacking_rect = pygame.Rect(self.rect.centerx, 
+                                         self.rect.y, 
+                                         5.0 * self.rect.width, 
+                                         self.rect.height)
+            else:
+                # Facing left
+                attacking_rect = pygame.Rect(self.rect.centerx - 5.0 * self.rect.width, 
+                                         self.rect.y, 
+                                         5.0 * self.rect.width, 
+                                         self.rect.height)
         else:
-          # Zippy's flipped orientation is False, Flash's normal orientation is False
-          # Both of them facing left, so attack hitbox should be to the left
-          attacking_rect = pygame.Rect(self.rect.centerx - 5.0 * self.rect.width, 
-                                     self.rect.y, 
-                                     5.0 * self.rect.width, 
-                                     self.rect.height)
-      else:
-        # Regular hitbox for attack type 1
-        if self.flip:
-          # Facing right
-          attacking_rect = pygame.Rect(self.rect.centerx, 
-                                     self.rect.y, 
-                                     2.5 * self.rect.width, 
-                                     self.rect.height)
-        else:
-          # Facing left
-          attacking_rect = pygame.Rect(self.rect.centerx - 2.5 * self.rect.width, 
-                                     self.rect.y, 
-                                     2.5 * self.rect.width, 
-                                     self.rect.height)
-      
-      if attacking_rect.colliderect(target.rect):
-        # Only apply damage if target is not in hit cooldown
-        if target.hit_cooldown <= 0:
-          # Apply damage
-          prev_health = target.health
-          target.health -= 10
-          print(f"HIT! Health reduced from {prev_health} to {target.health}")
-          target.hit = True
-          target.hit_cooldown = 45  # Set the hit cooldown
+            # Regular hitbox for attack type 1
+            if self.flip:
+                # Facing right
+                attacking_rect = pygame.Rect(self.rect.centerx, 
+                                         self.rect.y, 
+                                         2.5 * self.rect.width, 
+                                         self.rect.height)
+            else:
+                # Facing left
+                attacking_rect = pygame.Rect(self.rect.centerx - 2.5 * self.rect.width, 
+                                         self.rect.y, 
+                                         2.5 * self.rect.width, 
+                                         self.rect.height)
+        
+        if attacking_rect.colliderect(target.rect):
+            # Only apply damage if target is not in hit cooldown
+            if target.hit_cooldown <= 0:
+                # Apply damage
+                prev_health = target.health
+                target.health -= 10
+                print(f"HIT! Health reduced from {prev_health} to {target.health}")
+                target.hit = True
+                target.hit_cooldown = 45  # Set the hit cooldown
+                hit_successful = True  # Mark that a hit occurred
+                
+    return hit_successful  # Return whether a hit was successful
 
   def update_action(self, new_action):
     # Check if the new action is different to the previous one
