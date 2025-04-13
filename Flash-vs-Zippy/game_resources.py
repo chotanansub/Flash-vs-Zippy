@@ -43,22 +43,22 @@ class GameResources:
     def initialize_audio(self):
         """Initialize game audio"""
         pygame.mixer.music.load(os.path.join(self.base_path, "assets/audio/bgm.mp3"))
-        pygame.mixer.music.set_volume(0.5)
+        pygame.mixer.music.set_volume(0.35)
         pygame.mixer.music.play(-1, 0.0, 5000)
         
         # Load sound effects for Zippy
         zippy_attack1_fx = pygame.mixer.Sound(os.path.join(self.base_path, "assets/audio/zippy_punch.wav"))
-        zippy_attack1_fx.set_volume(0.5)
+        zippy_attack1_fx.set_volume(0.3)
         
         zippy_attack2_fx = pygame.mixer.Sound(os.path.join(self.base_path, "assets/audio/dust_tornado.wav"))
-        zippy_attack2_fx.set_volume(0.6)
+        zippy_attack2_fx.set_volume(0.3)
         
         # Load sound effects for Flash
         flash_attack1_fx = pygame.mixer.Sound(os.path.join(self.base_path, "assets/audio/flash_punch.mp3"))
-        flash_attack1_fx.set_volume(0.7)
+        flash_attack1_fx.set_volume(0.3)
         
         flash_attack2_fx = pygame.mixer.Sound(os.path.join(self.base_path, "assets/audio/tornado.wav"))
-        flash_attack2_fx.set_volume(0.8)
+        flash_attack2_fx.set_volume(0.15)
         
         return zippy_attack1_fx, zippy_attack2_fx, flash_attack1_fx, flash_attack2_fx
     
