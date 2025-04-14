@@ -234,6 +234,7 @@ def network_thread_function():
             elif msg_type == "game_state":
                 # Update game state from server
                 states = message.get("player_states", {})
+                print(f'🙉 {states}')
                 round_over = message.get("round_over", False)
                 
                 # Update fighter states
@@ -244,13 +245,13 @@ def network_thread_function():
                         old_health = fighter_2.health
                         fighter_2.set_state(states.get("2", {}))
                         if fighter_2.health < old_health:
-                            print(f"Health sync: Player 2 health changed from {old_health} to {fighter_2.health}")
+                            print(f"🦅 ❤️‍🔥Health sync: Player 2 health changed from {old_health} to {fighter_2.health}")
                     else:
                         # Check if health changed
                         old_health = fighter_1.health
                         fighter_1.set_state(states.get("1", {}))
                         if fighter_1.health < old_health:
-                            print(f"Health sync: Player 1 health changed from {old_health} to {fighter_1.health}")
+                            print(f"🐿️ ❤️‍🔥Health sync: Player 1 health changed from {old_health} to {fighter_1.health}")
             
             elif msg_type == "state_update":
                 # Process individual state update
@@ -262,12 +263,12 @@ def network_thread_function():
                     old_health = fighter_1.health
                     fighter_1.set_state(state)
                     if fighter_1.health < old_health:
-                        print(f"Direct health update: Player 1 health changed from {old_health} to {fighter_1.health}")
+                        print(f"🦅🚀Direct health update: Player 1 health changed from {old_health} to {fighter_1.health}")
                 elif target_player_id == "2":
                     old_health = fighter_2.health
                     fighter_2.set_state(state)
                     if fighter_2.health < old_health:
-                        print(f"Direct health update: Player 2 health changed from {old_health} to {fighter_2.health}")
+                        print(f"🐿️🚀Direct health update: Player 2 health changed from {old_health} to {fighter_2.health}")
             
             elif msg_type == "error":
                 connection_status = f"Server error: {message.get('message', 'Unknown error')}"
@@ -508,19 +509,18 @@ while run:
         game_res.draw_text(screen, "Press ESC to return to menu", menu_font, game_res.WHITE, 300, 250)
     else:
         # Show player stats
-        if player_id == "1":
-            game_res.draw_health_bar(screen, fighter_1.health, 20, 20)
-            game_res.draw_health_bar(screen, fighter_2.health, 580, 20)
-        else:
-            game_res.draw_health_bar(screen, fighter_2.health, 20, 20)
-            game_res.draw_health_bar(screen, fighter_1.health, 580, 20)
-
+        
+        game_res.draw_health_bar(screen, fighter_1.health, 20, 20)
+        game_res.draw_health_bar(screen, fighter_2.health, 580, 20)
+           
         game_res.draw_text(screen, "P1: " + str(score[0]), score_font, game_res.BLACK, 22, 62)
         game_res.draw_text(screen, "P2: " + str(score[1]), score_font, game_res.BLACK, 582, 62)
-
         game_res.draw_text(screen, "P1: " + str(score[0]), score_font, game_res.WHITE, 20, 60)
         game_res.draw_text(screen, "P2: " + str(score[1]), score_font, game_res.WHITE, 580, 60)
-        
+       
+        print(f'🐿️♻️ P1 health: {fighter_1.health} ')
+        print(f'🦅🔥 P2 health: {fighter_2.health} ')
+
         # Show which player you are
         if player_id:
             game_res.draw_text(screen, f"You are Player {player_id}", score_font, game_res.WHITE, 400, 20)
@@ -604,7 +604,7 @@ while run:
                 
                 # Always keep our local health check values updated
                 last_health_check[1] = fighter_2.health
-            
+
             # Send local input and state to server regularly
             if current_time - last_sent_update_time >= 33 or force_update_health:  # About every 2nd frame at 60fps
                 if player_id == "1":
