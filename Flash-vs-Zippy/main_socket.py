@@ -549,7 +549,20 @@ while run:
                         "player_id": "2",  # Explicitly identify this is player 2's health
                         "priority": "high"
                     })
-                    print("Sent high priority attack success update for opponent (Player 2)")
+                    
+                    # IMPORTANT: Also send attacker's state with attack animation info
+                    attacker_state = fighter_1.get_state()
+                    # Ensure attack animation state is preserved
+                    attacker_state["attacking"] = True
+                    attacker_state["attack_type"] = fighter_1.attack_type
+                    attacker_state["action"] = fighter_1.action  # This contains the attack animation index
+                    
+                    send_message("state_update", {
+                        "state": attacker_state,
+                        "player_id": "1",  # This is the attacker's state
+                        "priority": "high"
+                    })
+                    print("Sent high priority attack animation update for attacker (Player 1)")
                     
                 last_health_check[1] = fighter_2.health
                 
@@ -572,7 +585,20 @@ while run:
                         "player_id": "1",  # Explicitly identify this is player 1's health
                         "priority": "high"
                     })
-                    print("Sent high priority attack success update for opponent (Player 1)")
+                    
+                    # IMPORTANT: Also send attacker's state with attack animation info
+                    attacker_state = fighter_2.get_state()
+                    # Ensure attack animation state is preserved
+                    attacker_state["attacking"] = True
+                    attacker_state["attack_type"] = fighter_2.attack_type
+                    attacker_state["action"] = fighter_2.action  # This contains the attack animation index
+                    
+                    send_message("state_update", {
+                        "state": attacker_state,
+                        "player_id": "2",  # This is the attacker's state
+                        "priority": "high"
+                    })
+                    print("Sent high priority attack animation update for attacker (Player 2)")
                     
                 last_health_check[0] = fighter_1.health
                 

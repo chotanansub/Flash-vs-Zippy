@@ -27,6 +27,9 @@ class Fighter():
     self.is_local = is_local  # Whether this fighter is controlled locally
     self.remote_input = {}  # Store remote input for network play
     self.font = font  # Store the font for drawing text
+    # NEW: Track if this fighter is currently displaying a remote attack animation
+    self.remote_attacking = False
+    self.remote_attack_action = 0
 
   def load_images(self, sprite_sheet, animation_steps):
     # extract images from spritesheet
@@ -73,7 +76,7 @@ class Fighter():
         print(f"Health sync: {old_health} -> {remote_health}")
         
         # If health decreased, ensure we show the hit animation
-        if not self.hit:
+        if not self.hit and self.is_local:  # Only set hit for local fighter
             self.hit = True
             self.hit_cooldown = 45
     
@@ -83,8 +86,40 @@ class Fighter():
     self.vel_y = state.get("vel_y", self.vel_y)
     self.running = state.get("running", self.running)
     self.jump = state.get("jump", self.jump)
-    self.attacking = state.get("attacking", self.attacking)
-    self.attack_type = state.get("attack_type", self.attack_type)
+    
+    # CHANGED: Special handling for remote attack animations
+    remote_attacking = state.get("attacking", False)
+    remote_action = state.get("action", 0)
+    
+    # If this is a remote fighter and it's attacking, store that state
+    if not self.is_local and remote_attacking:
+        # This is an attack animation coming from the network
+        self.remote_attacking = True
+        self.remote_attack_action = remote_action
+        self.attacking = True
+        self.attack_type = state.get("attack_type", 1)
+        
+        # Force the animation to attack even if we're in hit animation
+        # This is a special case to ensure attacks show properly in multiplayer
+        if (remote_action == 3 or remote_action == 4) and self.action != remote_action:
+            print(f"Remote attack detected, action: {remote_action}")
+            self.action = remote_action
+            self.frame_index = state.get("frame_index", 0)
+            
+    elif not self.is_local:
+        # Normal state update for non-local fighters when not attacking
+        self.attacking = remote_attacking
+        self.attack_type = state.get("attack_type", self.attack_type)
+        
+        # If remote player was attacking but stopped, clear the remote attack flag
+        if not remote_attacking:
+            self.remote_attacking = False
+            self.remote_attack_action = 0
+    else:
+        # Normal update for local player
+        self.attacking = state.get("attacking", self.attacking)
+        self.attack_type = state.get("attack_type", self.attack_type)
+    
     self.attack_cooldown = state.get("attack_cooldown", self.attack_cooldown)
     
     # Only update hit state if we're not in hit cooldown from a health change
@@ -98,10 +133,24 @@ class Fighter():
     
     self.alive = state.get("alive", self.alive)
     
-    # Don't override animation states if we're in the middle of a hit animation
-    if self.action != 5 or self.frame_index == 0:
-        self.action = state.get("action", self.action)
-        self.frame_index = state.get("frame_index", self.frame_index)
+    # MODIFIED: Update animation for remote characters differently
+    # For local characters, don't override hit animation
+    # For remote characters, allow attack animations to override hit
+    if self.is_local:
+        # Local fighter - don't override hit animation
+        if self.action != 5 or self.frame_index == 0:
+            self.action = state.get("action", self.action)
+            self.frame_index = state.get("frame_index", self.frame_index)
+    else:
+        # Remote fighter - update animation with special cases
+        if (remote_action == 3 or remote_action == 4) and remote_attacking:
+            # For attack animations, always update from network
+            self.action = remote_action
+            self.frame_index = state.get("frame_index", self.frame_index)
+        elif self.action != 5 or self.frame_index == 0:
+            # For non-attack animations, update unless in hit animation
+            self.action = state.get("action", self.action)
+            self.frame_index = state.get("frame_index", self.frame_index)
     
     self.flip = state.get("flip", self.flip)
 
@@ -260,11 +309,18 @@ class Fighter():
       self.attack_cooldown -= 1
 
   def update(self):
-    # Check what action the player is performing
+    # MODIFIED: Updated action priorities to handle remote attacks differently
     if self.health <= 0:
       self.health = 0
       self.alive = False
       self.update_action(6)  # 6:death
+    elif not self.is_local and self.remote_attacking:
+      # For non-local (remote) fighters, prioritize showing attack animations
+      # even if being hit, to ensure attacks are visible to the opponent
+      if self.attack_type == 1:
+        self.update_action(3)  # 3:attack1
+      elif self.attack_type == 2:
+        self.update_action(4)  # 4:attack2
     elif self.hit == True:
       self.update_action(5)  # 5:hit
     elif self.attacking == True:
@@ -309,12 +365,21 @@ class Fighter():
         if self.action == 3 or self.action == 4:
           self.attacking = False
           self.attack_cooldown = 20
+          
+          # MODIFIED: Clean up remote attack state when animation finishes
+          if not self.is_local:
+            self.remote_attacking = False
+            self.remote_attack_action = 0
+            
         # Check if damage was taken
         if self.action == 5:
           self.hit = False
           # If the player was in the middle of an attack, then the attack is stopped
-          self.attacking = False
-          self.attack_cooldown = 20
+          # MODIFIED: Only cancel attack animation for local fighters
+          # This allows remote fighters to complete their attack animation
+          if self.is_local:
+            self.attacking = False
+            self.attack_cooldown = 20
     
     # Update hit cooldown if active
     if self.hit_cooldown > 0:
