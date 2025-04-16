@@ -31,6 +31,8 @@ class Fighter():
     self.remote_attacking = False
     self.remote_attack_action = 0
 
+    self.attack_has_hit = False
+
   def load_images(self, sprite_sheet, animation_steps):
     # extract images from spritesheet
     animation_list = []
@@ -365,6 +367,7 @@ class Fighter():
         if self.action == 3 or self.action == 4:
           self.attacking = False
           self.attack_cooldown = 20
+          self.attack_has_hit = False
           
           # MODIFIED: Clean up remote attack state when animation finishes
           if not self.is_local:
@@ -388,63 +391,38 @@ class Fighter():
   # Update the attack method in Fighter class to separate animation from hit detection
 
   def attack(self, target):
-    """Handle attack and return whether hit was successful"""
-    hit_successful = False  # Track whether a hit occurred
-    
-    if self.attack_cooldown == 0:
-        # Execute attack
-        self.attacking = True
-        
-        # Play the appropriate sound based on attack type
-        if self.attack_type == 1:
-            self.attack_sounds[0].play()  # Attack1 sound
-        elif self.attack_type == 2:
-            self.attack_sounds[1].play()  # Attack2 sound
-        
-        # Create a hitbox based on attack type - attack2 has double size
-        if self.attack_type == 2:
-            # Larger hitbox for attack type 2 (twice as large)
-            if self.flip:
-                # Facing right
-                attacking_rect = pygame.Rect(self.rect.centerx, 
-                                        self.rect.y, 
-                                        3.0 * self.rect.width, 
-                                        self.rect.height)
-            else:
-                # Facing left
-                attacking_rect = pygame.Rect(self.rect.centerx - 3.0 * self.rect.width, 
-                                        self.rect.y, 
-                                        3.0 * self.rect.width, 
-                                        self.rect.height)
-        else:
-            # Regular hitbox for attack type 1
-            if self.flip:
-                # Facing right
-                attacking_rect = pygame.Rect(self.rect.centerx, 
-                                        self.rect.y, 
-                                        2.5 * self.rect.width, 
-                                        self.rect.height)
-            else:
-                # Facing left
-                attacking_rect = pygame.Rect(self.rect.centerx - 2.5 * self.rect.width, 
-                                        self.rect.y, 
-                                        2.5 * self.rect.width, 
-                                        self.rect.height)
-        
-        # Only check for hit collision if this is a local player
-        # For remote players, hit detection is done on their end
-        if self.is_local and attacking_rect.colliderect(target.rect):
-            # Only apply damage if target is not in hit cooldown
-            if target.hit_cooldown <= 0:
-                # Apply damage
-                prev_health = target.health
-                target.health -= 10
-                print(f"HIT! {self.player} hit {target.player}! Health reduced from {prev_health} to {target.health}")
-                target.hit = True
-                target.hit_cooldown = 45  # Set the hit cooldown
-                hit_successful = True  # Mark that a hit occurred
-                
-    return hit_successful  # Return whether a hit was successful
+      hit_successful = False
+      
+      if self.attack_cooldown == 0 and not self.attack_has_hit:
+          self.attacking = True
+
+          if self.attack_type == 1:
+              self.attack_sounds[0].play()
+          elif self.attack_type == 2:
+              self.attack_sounds[1].play()
+
+          # Create attack hitbox
+          if self.attack_type == 2:
+              attack_width = 3.0 * self.rect.width
+          else:
+              attack_width = 2.5 * self.rect.width
+
+          if self.flip:
+              attacking_rect = pygame.Rect(self.rect.centerx, self.rect.y, attack_width, self.rect.height)
+          else:
+              attacking_rect = pygame.Rect(self.rect.centerx - attack_width, self.rect.y, attack_width, self.rect.height)
+
+          if self.is_local and attacking_rect.colliderect(target.rect):
+              if target.hit_cooldown <= 0:
+                  prev_health = target.health
+                  target.health -= 10
+                  target.hit = True
+                  target.hit_cooldown = 45
+                  hit_successful = True
+                  self.attack_has_hit = True  # ✅ Prevent multiple hits
+                  print(f"HIT! {self.player} hit {target.player}! Health: {prev_health} → {target.health}")
+
+      return hit_successful
 
   def update_action(self, new_action):
     # Check if the new action is different to the previous one
