@@ -480,7 +480,12 @@ while waiting_for_connection and connected:
     
     pygame.display.update()
     clock.tick(game_res.FPS)
-
+# Set ranged attack cooldown (in milliseconds)
+RANGED_ATTACK_COOLDOWN = 3000  # 3 seconds cooldown for ranged attack
+fighter_1.ranged_cooldown = 0
+fighter_2.ranged_cooldown = 0
+fighter_1.last_ranged_time = 0
+fighter_2.last_ranged_time = 0
 # Adjust fighter instances based on player ID
 if player_id == "2":
     # If we're player 2, swap the is_local flags
@@ -524,11 +529,57 @@ while run:
             game_res.draw_text(screen, f"You are Player {player_id}", score_font, game_res.WHITE, 400, 20)
 
         # Update countdown
+         # Draw ranged attack cooldown indicators
+    # Player 1 cooldown
+        if fighter_1.last_ranged_time > 0:
+            cooldown_remaining = (RANGED_ATTACK_COOLDOWN - (current_time - fighter_1.last_ranged_time)) / 1000
+            if cooldown_remaining <= 0:
+                cooldown_text = "Ranged: READY"
+                cooldown_color = game_res.GREEN
+                fighter_1.ranged_cooldown = 0
+            else:
+                cooldown_text = f"Ranged: {cooldown_remaining:.1f}s"
+                cooldown_color = game_res.RED
+                fighter_1.ranged_cooldown = 1
+        else:
+            cooldown_text = "Ranged: READY"
+            cooldown_color = game_res.GREEN
+            fighter_1.ranged_cooldown = 0
+        
+        game_res.draw_text(screen, cooldown_text, score_font, game_res.BLACK, 22, 92)
+        game_res.draw_text(screen, cooldown_text, score_font, cooldown_color, 20, 90)
+        
+        # Player 2 cooldown
+        if fighter_2.last_ranged_time > 0:
+            cooldown_remaining = (RANGED_ATTACK_COOLDOWN - (current_time - fighter_2.last_ranged_time)) / 1000
+            if cooldown_remaining <= 0:
+                cooldown_text = "Ranged: READY"
+                cooldown_color = game_res.GREEN
+                fighter_2.ranged_cooldown = 0
+            else:
+                cooldown_text = f"Ranged: {cooldown_remaining:.1f}s"
+                cooldown_color = game_res.RED
+                fighter_2.ranged_cooldown = 1
+        else:
+            cooldown_text = "Ranged: READY"
+            cooldown_color = game_res.GREEN
+            fighter_2.ranged_cooldown = 0
+        
+        game_res.draw_text(screen, cooldown_text, score_font, game_res.BLACK, 582, 92)
+        game_res.draw_text(screen, cooldown_text, score_font, cooldown_color, 580, 90)
+        
         if intro_count <= 0:
             # Move fighters
             fighter_1.move(game_res.SCREEN_WIDTH, game_res.SCREEN_HEIGHT, screen, fighter_2, round_over)
             fighter_2.move(game_res.SCREEN_WIDTH, game_res.SCREEN_HEIGHT, screen, fighter_1, round_over)
-            
+                        # Check if ranged attack was used and update cooldown
+            if fighter_1.ranged_attack_used:
+                fighter_1.last_ranged_time = current_time
+                fighter_1.ranged_attack_used = False
+                
+            if fighter_2.ranged_attack_used:
+                fighter_2.last_ranged_time = current_time
+                fighter_2.ranged_attack_used = False
             # Check if either fighter health has changed since last update
             # We need to track both who caused the damage and whose health changed
             if player_id == "1":

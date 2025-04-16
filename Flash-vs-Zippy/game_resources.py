@@ -18,7 +18,7 @@ class GameResources:
         self.YELLOW = (255, 255, 0)
         self.WHITE = (255, 255, 255)
         self.BLACK = (0, 0, 0)
-        
+        self.GREEN = (0, 255, 0)
         # Game variables
         self.FPS = 60
         self.ROUND_OVER_COOLDOWN = 2000
