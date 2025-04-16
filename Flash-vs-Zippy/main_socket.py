@@ -187,7 +187,7 @@ def receive_message():
 
 # Function to listen for messages from the server
 def network_thread_function():
-    global client_socket, game_started, round_over, fighter_1, fighter_2, stop_network_thread, connection_status
+    global client_socket, game_started, round_over, fighter_1, fighter_2, stop_network_thread, connection_status, round_over_time
     
     while not stop_network_thread:
         try:
@@ -235,7 +235,15 @@ def network_thread_function():
                 # Update game state from server
                 states = message.get("player_states", {})
                 print(f'🙉 {states}')
-                round_over = message.get("round_over", False)
+                
+                # Update round_over state from server
+                server_round_over = message.get("round_over", False)
+                if server_round_over != round_over:
+                    round_over = server_round_over
+                    print(f"Round over state updated from server: {round_over}")
+                    if round_over:
+                        # Set round_over_time when we first receive the round_over flag
+                        round_over_time = pygame.time.get_ticks()
                 
                 # Update fighter states
                 if "1" in states and "2" in states:
@@ -484,6 +492,7 @@ run = True
 last_health_check = [100, 100]  # Store last health values for both fighters
 last_sent_update_time = 0
 force_update_health = False
+round_over_time = 0  # Initialize round_over_time variable
 
 while run:
     clock.tick(game_res.FPS)
@@ -640,21 +649,25 @@ while run:
         # Check for player defeat
         if not round_over:
             if not fighter_1.alive:
-                score[1] += 1
-                round_over = True
-                round_over_time = pygame.time.get_ticks()
-                
-                # Send round over notification to server
-                send_message("round_over", {})
-                print(f"Player 2 wins round - fighter_1 defeated")
+                # Only the local player should update the score and send round_over
+                if (player_id == "1" and fighter_1.is_local) or (player_id == "2" and not fighter_1.is_local):
+                    score[1] += 1
+                    round_over = True
+                    round_over_time = pygame.time.get_ticks()
+                    
+                    # Send round over notification to server
+                    send_message("round_over", {})
+                    print(f"Player 2 wins round - fighter_1 defeated")
             elif not fighter_2.alive:
-                score[0] += 1
-                round_over = True
-                round_over_time = pygame.time.get_ticks()
-                
-                # Send round over notification to server
-                send_message("round_over", {})
-                print(f"Player 1 wins round - fighter_2 defeated")
+                # Only the local player should update the score and send round_over
+                if (player_id == "2" and fighter_2.is_local) or (player_id == "1" and not fighter_2.is_local):
+                    score[0] += 1
+                    round_over = True
+                    round_over_time = pygame.time.get_ticks()
+                    
+                    # Send round over notification to server
+                    send_message("round_over", {})
+                    print(f"Player 1 wins round - fighter_2 defeated")
         else:
             # Display victory image
             screen.blit(victory_img, (360, 150))
@@ -664,27 +677,31 @@ while run:
                 game_res.draw_text(screen, "Player 1 Wins!", score_font, game_res.WHITE, 400, 300)
             elif fighter_2.alive and not fighter_1.alive:
                 game_res.draw_text(screen, "Player 2 Wins!", score_font, game_res.WHITE, 400, 300)
-                
+            
+            # Only proceed with round reset if enough time has passed
             if pygame.time.get_ticks() - round_over_time > game_res.ROUND_OVER_COOLDOWN:
-                # Reset for new round
-                round_over = False
-                intro_count = 3
-                
-                # Create new fighters but maintain the same is_local setting
-                is_fighter1_local = fighter_1.is_local
-                is_fighter2_local = fighter_2.is_local
-                
-                fighter_1 = Fighter(1, 200, 310, True, game_res.ZIPPY_DATA, zippy_sheet, game_res.ZIPPY_ANIMATION_STEPS, 
-                                  (zippy_attack1_fx, zippy_attack2_fx), is_fighter1_local, score_font)
-                fighter_2 = Fighter(2, 700, 310, False, game_res.FLASH_DATA, flash_sheet, game_res.FLASH_ANIMATION_STEPS, 
-                                  (flash_attack1_fx, flash_attack2_fx), is_fighter2_local, score_font)
-                
-                # Reset health check values
-                last_health_check = [100, 100]
-                
-                # Send round reset notification to server
-                send_message("round_reset", {})
-                print("Round reset - new fighters created")
+                # Player who detected round is over should send round reset
+                if ((player_id == "1" and fighter_1.is_local) or 
+                    (player_id == "2" and fighter_2.is_local)):
+                    # Reset for new round
+                    round_over = False
+                    intro_count = 3
+                    
+                    # Create new fighters but maintain the same is_local setting
+                    is_fighter1_local = fighter_1.is_local
+                    is_fighter2_local = fighter_2.is_local
+                    
+                    fighter_1 = Fighter(1, 200, 310, True, game_res.ZIPPY_DATA, zippy_sheet, game_res.ZIPPY_ANIMATION_STEPS, 
+                                      (zippy_attack1_fx, zippy_attack2_fx), is_fighter1_local, score_font)
+                    fighter_2 = Fighter(2, 700, 310, False, game_res.FLASH_DATA, flash_sheet, game_res.FLASH_ANIMATION_STEPS, 
+                                      (flash_attack1_fx, flash_attack2_fx), is_fighter2_local, score_font)
+                    
+                    # Reset health check values
+                    last_health_check = [100, 100]
+                    
+                    # Send round reset notification to server
+                    send_message("round_reset", {})
+                    print("Round reset - new fighters created")
 
     # Update FPS counter once per second
     if pygame.time.get_ticks() - fps_update_time > 1000:  # Update every second
