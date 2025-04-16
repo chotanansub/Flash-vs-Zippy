@@ -239,20 +239,9 @@ def network_thread_function():
                 
                 # Update fighter states
                 if "1" in states and "2" in states:
-                    # Update opponent's state (our state is maintained locally)
-                    if player_id == "1":
-                        # Check if health changed
-                        old_health = fighter_2.health
-                        fighter_2.set_state(states.get("2", {}))
-                        if fighter_2.health < old_health:
-                            print(f"🦅 ❤️‍🔥Health sync: Player 2 health changed from {old_health} to {fighter_2.health}")
-                    else:
-                        # Check if health changed
-                        old_health = fighter_1.health
-                        fighter_1.set_state(states.get("1", {}))
-                        if fighter_1.health < old_health:
-                            print(f"🐿️ ❤️‍🔥Health sync: Player 1 health changed from {old_health} to {fighter_1.health}")
-            
+                    fighter_1.set_state(states.get("1", {}))
+                    fighter_2.set_state(states.get("2", {}))
+                    print(f"❄️ Sync update: P1 = {fighter_1.health}, P2 = {fighter_2.health}")
             elif msg_type == "state_update":
                 # Process individual state update
                 state = message.get("state", {})

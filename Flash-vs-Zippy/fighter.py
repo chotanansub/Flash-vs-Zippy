@@ -68,63 +68,54 @@ class Fighter():
     """Set the state of the fighter from network data"""
     if not state:
         return
-    
+
     # Always prioritize health updates
     remote_health = state.get("health", self.health)
-    if remote_health < self.health:
-        # Health decreased - definitely apply this change
+    if remote_health != self.health:
         old_health = self.health
         self.health = remote_health
-        print(f"Health sync: {old_health} -> {remote_health}")
-        
-        # If health decreased, ensure we show the hit animation
-        if not self.hit and self.is_local:  # Only set hit for local fighter
+        print(f"❤️‍🔥 Health sync: {old_health} → {remote_health} (Local: {self.is_local})")
+
+        # Trigger hit animation for local victim
+        if remote_health < old_health and self.is_local and not self.hit:
             self.hit = True
             self.hit_cooldown = 45
-    
-    # Update the rest of the state
-    self.rect.x = state.get("x", self.rect.x)
-    self.rect.y = state.get("y", self.rect.y)
-    self.vel_y = state.get("vel_y", self.vel_y)
-    self.running = state.get("running", self.running)
-    self.jump = state.get("jump", self.jump)
-    
-    # CHANGED: Special handling for remote attack animations
-    remote_attacking = state.get("attacking", False)
-    remote_action = state.get("action", 0)
-    
-    # If this is a remote fighter and it's attacking, store that state
-    if not self.is_local and remote_attacking:
-        # This is an attack animation coming from the network
-        self.remote_attacking = True
-        self.remote_attack_action = remote_action
-        self.attacking = True
-        self.attack_type = state.get("attack_type", 1)
-        
-        # Force the animation to attack even if we're in hit animation
-        # This is a special case to ensure attacks show properly in multiplayer
-        if (remote_action == 3 or remote_action == 4) and self.action != remote_action:
-            print(f"Remote attack detected, action: {remote_action}")
-            self.action = remote_action
-            self.frame_index = state.get("frame_index", 0)
-            
-    elif not self.is_local:
-        # Normal state update for non-local fighters when not attacking
-        self.attacking = remote_attacking
-        self.attack_type = state.get("attack_type", self.attack_type)
-        
-        # If remote player was attacking but stopped, clear the remote attack flag
-        if not remote_attacking:
-            self.remote_attacking = False
-            self.remote_attack_action = 0
-    else:
-        # Normal update for local player
+
+    if not self.is_local:
+        # Apply full state for remote players
+        self.rect.x = state.get("x", self.rect.x)
+        self.rect.y = state.get("y", self.rect.y)
+        self.vel_y = state.get("vel_y", self.vel_y)
+        self.running = state.get("running", self.running)
+        self.jump = state.get("jump", self.jump)
         self.attacking = state.get("attacking", self.attacking)
         self.attack_type = state.get("attack_type", self.attack_type)
-    
-    self.attack_cooldown = state.get("attack_cooldown", self.attack_cooldown)
-    
-    # Only update hit state if we're not in hit cooldown from a health change
+        self.attack_cooldown = state.get("attack_cooldown", self.attack_cooldown)
+        self.alive = state.get("alive", self.alive)
+        self.flip = state.get("flip", self.flip)
+
+        # Remote animation handling
+        remote_action = state.get("action", 0)
+        remote_attacking = state.get("attacking", False)
+
+        if remote_attacking:
+            self.remote_attacking = True
+            self.remote_attack_action = remote_action
+        else:
+            self.remote_attacking = False
+            self.remote_attack_action = 0
+
+        if (remote_action in [3, 4]) and remote_attacking:
+            self.action = remote_action
+            self.frame_index = state.get("frame_index", self.frame_index)
+        elif self.action != 5 or self.frame_index == 0:
+            self.action = state.get("action", self.action)
+            self.frame_index = state.get("frame_index", self.frame_index)
+    else:
+        # Local player: skip overwriting movement/attack/animation states
+        pass
+
+    # Allow hit state to update if not in cooldown
     if self.hit_cooldown <= 0:
         new_hit = state.get("hit", self.hit)
         if new_hit and not self.hit:
@@ -132,29 +123,6 @@ class Fighter():
             self.hit_cooldown = 45
         elif not new_hit:
             self.hit = False
-    
-    self.alive = state.get("alive", self.alive)
-    
-    # MODIFIED: Update animation for remote characters differently
-    # For local characters, don't override hit animation
-    # For remote characters, allow attack animations to override hit
-    if self.is_local:
-        # Local fighter - don't override hit animation
-        if self.action != 5 or self.frame_index == 0:
-            self.action = state.get("action", self.action)
-            self.frame_index = state.get("frame_index", self.frame_index)
-    else:
-        # Remote fighter - update animation with special cases
-        if (remote_action == 3 or remote_action == 4) and remote_attacking:
-            # For attack animations, always update from network
-            self.action = remote_action
-            self.frame_index = state.get("frame_index", self.frame_index)
-        elif self.action != 5 or self.frame_index == 0:
-            # For non-attack animations, update unless in hit animation
-            self.action = state.get("action", self.action)
-            self.frame_index = state.get("frame_index", self.frame_index)
-    
-    self.flip = state.get("flip", self.flip)
 
   def set_remote_input(self, input_data):
     """Set the remote input data for network play"""
