@@ -655,7 +655,7 @@ while run:
                 last_health_check[1] = fighter_2.health
 
             # Send local input and state to server regularly
-            if current_time - last_sent_update_time >= 33 or force_update_health:  # About every 2nd frame at 60fps
+            if current_time - last_sent_update_time >= 66 or force_update_health:  # About every 2nd frame at 60fps
                 if player_id == "1":
                     # Send input data
                     input_data = fighter_1.get_input()
