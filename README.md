@@ -23,7 +23,6 @@
 ### 🚀 Project Setup
 
 1. Install Python 3.7.9 (either locally or in a virtual environment).
-
 2. Install required packages:
    ```bash
    pip install pygame==2.6.1
@@ -32,7 +31,6 @@
    ```bash
    pip install -r requirements.txt
    ```
-
 3. Run the game:
    ```bash
    python Flash-vs-Zippy/main_socket.py
@@ -42,32 +40,11 @@
 
 ### 🎮 Gameplay
 
-<div style="display: flex; justify-content: space-around;">
-
-<div style="flex: 1; text-align: center;">
-
-#### 🐿️ Zippy
-<img src="Flash-vs-Zippy/assets/images/zippy-guide.gif" alt="Zippy Controls" width="250"/>
-
-**A**: Move left  
-**D**: Move right  
-**W**: Jump  
-**R**: Attack 1 (Punch)  
-**T**: Attack 2 (Ranged attack)
-
-</div>
-
-<div style="flex: 1; text-align: center;">
-
-#### 🦅 Flash
-<img src="Flash-vs-Zippy/assets/images/Flash-guide.gif" alt="Flash Controls" width="250"/>
-
- **Left Arrow**: Move left  
-**Right Arrow**: Move right  
- **Up Arrow**: Jump  
-**K**: Attack 1 (Punch)  
- **L**: Attack 2 (Ranged attack)
-
-</div>
-
-</div>
+| 🐿️ Zippy | 🦅 Flash |
+|:---|:---|
+| <img src="Flash-vs-Zippy/assets/images/zippy-guide.gif" alt="Zippy Controls" width="250"/> | <img src="Flash-vs-Zippy/assets/images/flash-guide.gif" alt="Flash Controls" width="250"/> |
+| **A**: Move left  | **Left Arrow**: Move left |
+| **D**: Move right | **Right Arrow**: Move right |
+| **W**: Jump | **Up Arrow**: Jump |
+| **R**: Attack 1 (Punch) | **K**: Attack 1 (Punch) |
+| **T**: Attack 2 (Ranged attack) | **L**: Attack 2 (Ranged attack) |
