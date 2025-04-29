@@ -6,8 +6,9 @@
 ### 🎮 About This Project
 
 - A 2D fighting game developed using [Pygame](https://github.com/pygame/pygame).
+- Developed by [Chotanansub Sophaken](https://github.com/chotanansub) and [Zyaire Bush](https://github.com/Zbush1), `Kent State University`, Class of Spring 2025.
 - Demonstrates socket programming at the application layer.
-- Created as part of `CS 35201: Computer Communication Networks` at Kent State University.
+- Created as part of `CS 35201: Computer Communication Networks` 
 
 ---
 
